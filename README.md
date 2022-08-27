@@ -1,4 +1,6 @@
-# `dapr`
+# `dapr` 
+
+![developing](https://img.shields.io/badge/lifecycle-developing-orange)
 
 An implementation of the [Debug Adapter
 Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
