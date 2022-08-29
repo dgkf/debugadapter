@@ -35,7 +35,7 @@ run_background_stdio_connection <- function(...) {
     args = list(...)
   ))
 
-  res <- addTaskCallback(name = "Background Debugger", function(...) {
+  addTaskCallback(name = "Background Debugger", function(...) {
     echo(DEBUG, adapter$con$read_error())
 
     # handle any bg processes relayed back to parent session
