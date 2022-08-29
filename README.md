@@ -59,6 +59,8 @@ multiple R processes:
    by the debug client. Unfortunately, this means that this approach is
    currently not supported on Windows. 
 
+### Debugging Loop
+
 ```mermaid
 sequenceDiagram
 
@@ -120,6 +122,27 @@ brow -.-> dap
 
 dap -.->|socket| ide
 ```
+
+### The _Shadow_ Browser
+
+The "shadow" browser ("shadow" here in the vein of the "shadow DOM"
+in the web world - a mirror of the current, displayed environment 
+for managing state) is a `dapr`-specific browser prompt, which
+executes additional code in the background to synchronize debugger
+state with a client. Since the `browser()` prompt is rather rigidly 
+defined in the internals of the R language, the way this works is 
+messy to say the least. 
+
+When active, `stdin` and `stdout` are redirected to a child process.
+User commands are sent back to the parent process's `stdin` and 
+the output is sent back to the parent using `stderr` (using messages)
+Additional calls are made to inspect the state of the debugger after
+each step and to send this information to the client. These calls
+are omitted from the output that is relayed back to the parent. 
+
+A task callback is used to restore the original `stdin` and `stdout`, 
+and to close all the connections used to communicate to the child
+process once the browser state has returns to the top level.
 
 ## Prior Art
 
