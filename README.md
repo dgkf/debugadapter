@@ -1,4 +1,4 @@
-# `dapr` 
+# `debugadapter` 
 
 ![developing](https://img.shields.io/badge/lifecycle-developing-orange)
 
@@ -16,19 +16,19 @@ Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
 > IDE-specific getting-started guides will come when the project is 
 > more mature
 
-`dapr` operates in one of two ways:
+`debugadapter` operates in one of two ways:
 
 1. `execute` mode, where A file is used as a script for execution, in which 
-   case `dapr` will launch a new debug server, register breakpoints and
-   provide a debug `REPL` within your client if it provides the capability
-   and allow you to step through the script.
+   case `debugadapter` will launch a new debug server, register breakpoints and
+   provide a debug `REPL` within your client if it provides the capability and
+   allow you to step through the script.
     
 2. `attach` mode, where your client will attach to a running server, running
    as a background process to an interactive session.
    
    ```r
    # start a server in the background
-   dapr::run()  
+   debugadapter::run()  
    
    # execute some code which will hit a breakpoint and debug as usual
    my_code_to_debug()
@@ -127,7 +127,7 @@ dap -.->|socket| ide
 
 An existing implementation that originated as a VSCode extension. 
 While that package seems to work well in VSCode, it has been on
-a long path to being more editor agnostic. `dapr` deviates from 
+a long path to being more editor agnostic. `debugadapter` deviates from 
 the design choices of this package in two key ways: 
 
 - A pure R package for simpler portability

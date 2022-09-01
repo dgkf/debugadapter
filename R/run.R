@@ -9,17 +9,17 @@ run <- function(..., debugger) {
 
 run_stdio_connection <- function(host = "localhost", port = 18721, poll = 100, debugger) {
   log(DEBUG, "Starting stdio server, awaiting DAP client ...")
-  adapter <- debug_adapter(socketConnection(
+  con <- socketConnection(
     host = host,
     port = port,
     server = TRUE,
     open = "r+b"
-  ))
+  )
 
+  adapter <- debug_adapter(con)
   if (!missing(debugger))
     adapter$debugger <- debugger
 
-  log(DEBUG, "Server connected")
   repeat {
     handle(adapter)
     Sys.sleep(poll / 1000)
@@ -31,7 +31,7 @@ run_stdio_connection <- function(host = "localhost", port = 18721, poll = 100, d
 run_background_stdio_connection <- function(...) {
   log(DEBUG, "Starting stdio server, awaiting DAP client ...")
   adapter <- debug_adapter(callr::r_bg(
-    function(...) dapr:::run(..., debugger = dapr::debug_stdout_relay()),
+    function(...) debugadapter:::run(..., debugger = debugadapter::debug_stdout_relay()),
     args = list(...)
   ))
 

@@ -25,6 +25,10 @@ vnapply <- function(..., FUN.VALUE = numeric(1L)) {
   vapply(..., FUN.VALUE = FUN.VALUE)
 }
 
+mfapply <- function(..., SIMPLIFY = FALSE) {
+  mapply(..., SIMPLIFY = SIMPLIFY)
+}
+
 
 #' Package source file helpers
 #'
@@ -54,6 +58,22 @@ find_package_name <- function(path = ".") {
 }
 
 
+line_code_span <- function(path, line) {
+  text <- scan(
+    path,
+    what = character(),
+    n = 1,
+    skip = line - 1,
+    sep = "\n",
+    quiet = TRUE
+  )
+
+  end <- nchar(text)
+  start <- end - nchar(trimws(text, "left"))
+
+  c(start, end)
+}
+
 
 is_success <- function(x) {
   isTRUE(attr(x, "success"))
@@ -64,4 +84,20 @@ is_success <- function(x) {
 spec <- function(anchor = "") {
   specs_url <- "https://microsoft.github.io/debug-adapter-protocol/specification"
   sprintf("(\\url{%s%s})", specs_url, anchor)
+}
+
+
+
+regmatches <- function(pattern, text, ...) {
+  m <- regexpr(pattern = pattern, text = text, ...)
+  ml <- attr(m, "match.length")
+  s <- attr(m, "capture.start")
+  l <- attr(m, "capture.length")
+  n <- attr(m, "capture.names")
+  full <- substring(text, m, m + ml - 1)
+  cap <- substring(text, s, s + l - 1)
+  mat <- matrix(cap, ncol = length(n), dimnames = list(c(), n))
+  colnames(mat) <- n
+  rownames(mat) <- full
+  mat
 }

@@ -1,12 +1,14 @@
+# nolint start
 TRACE <- 1
 DEBUG <- 2
 INFO <- 3
+# nolint end
 
 log <- function(level, ..., verbose = DEBUG) {
   dots <- list(...)
   for (i in seq_along(dots)) {
     if (is.character(dots[[i]])) next
-    dots[[i]] <- paste0(capture.output(dots[[i]]), "\n")
+    dots[[i]] <- paste0(capture.output(dots[[i]]), collapse = "\n")
   }
 
   if (is.logical(verbose))
@@ -21,7 +23,7 @@ log <- function(level, ..., verbose = DEBUG) {
   )
 
   if (verbose <= level)
-    message(sprintf("%s%s\n", level_msg, paste0(dots, collapse = "\n")))
+    message(sprintf("%s%s", level_msg, paste0(dots, collapse = "\n")))
 }
 
 echo <- function(level, msg, verbose = DEBUG) {

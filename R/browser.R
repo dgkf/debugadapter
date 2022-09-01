@@ -1,5 +1,7 @@
-  BROWSER_PROMPT_RE <- "Browse\\[(-?\\d+)\\]>\\s*$"
-  DONE_SEMAPHORE <- "__dapr_done__"
+#nolint start
+BROWSER_PROMPT_RE <- "Browse\\[(?<frame>-?\\d+)\\]>\\s*$"
+DONE_SEMAPHORE <- "__debugadapter_done__"
+#nolint end
 
 
 #' Shadow browser
@@ -8,26 +10,45 @@
 #' `browser()` interface, while allowing additional metadata to be captured to
 #' feed an IDE using the debug adapter protocol.
 #'
+#' Unfortunately, navigating history with arrows and using other
+#' terminal-accepted inputs for line navigation will not work.
+#'
 #' @inheritParams base::browser
 #'
 #' @examples
-#' x <- function(...) { y(...) }
-#' y <- function(...) {
-#'   1
-#'   2
-#'   3
-#'   print("hello, world!")
+#' x <- function() { y() }
+#' y <- function() {
+#'   shadow_browser(skipCalls = 4)
+#'   print("hello, world")
 #' }
 #'
 #' x()
 #'
 #' @export
-shadow_browser <- function(...) {
+shadow_browser <- function(..., ui = ui_browser_prompt) {
   pipe <- shadow_browser_pipes()
 
   # in the parent process, redirect all output to child
   orig_stdin  <- processx::conn_set_stdin(pipe$from_child, drop = FALSE)
   orig_stdout <- processx::conn_set_stdout(pipe$to_child, drop = FALSE)
+
+  # revert our stdin/stdout once we've returned to top level repl
+  addTaskCallback(
+    name = "close shadow browser",
+    function(expr, value, ok, visible) {
+      # for some reason callbacks are called within browser at lower stack depth?
+      still_browsing <- sys.nframe() > 1
+
+      if (!still_browsing) {
+        processx::conn_set_stdin(orig_stdin)
+        processx::conn_set_stdout(orig_stdout)
+        processx::conn_write(pipe$to_child, DONE_SEMAPHORE)
+        lapply(pipe, close)
+      }
+
+      still_browsing
+    }
+  )
 
   f <- parallel:::mcfork()
   if (inherits(f, "masterProcess")) {
@@ -44,7 +65,7 @@ shadow_browser <- function(...) {
       # present cleaner stdout input to user
       msg <- trimws(msg, "left")
       if (startsWith(msg, input)) msg <- trimws(substring(msg, nchar(input) + 1), "left")
-      message("\r", msg, appendLF = FALSE)
+      message("\r", ui(msg), appendLF = FALSE)
       if (isTRUE(attr(msg, "done"))) break
 
       debug <- step_shadow_browser(pipe$to_parent, pipe$from_parent, pipe$read_debug)
@@ -55,32 +76,33 @@ shadow_browser <- function(...) {
       processx::conn_write(pipe$to_parent, paste0(input, "\n"))
     }
 
+    # spoof a prompt, since we clobbered the prompt on first return to top level
+    processx::conn_write(orig_stdin, getOption("prompt"))
+
     lapply(pipe, close)
     parallel:::mcexit(0L)
   }
 
-  # revert our stdin/stdout once we've returned to top level repl
-  addTaskCallback(name = "close shadow browser", function(...) {
-    # for some reason callbacks are called within browser at lower stack depth?
-    still_browsing <- sys.nframe() > 1
-
-    if (!still_browsing) {
-      processx::conn_set_stdin(orig_stdin)
-      processx::conn_set_stdout(orig_stdout)
-
-      # signal that we're done and close all pipes
-      processx::conn_write(pipe$to_child, DONE_SEMAPHORE)
-      lapply(pipe, close)
-    }
-
-    still_browsing
-  })
-
   parent <- parent.frame()
-  parent$.dapr_con <- pipe$write_debug
+  parent$.con <- pipe$write_debug
 
   expr <- substitute(browser(...))
   eval.parent(expr)
+}
+
+
+
+ui_browser_prompt <- function(x) {
+  x
+}
+
+
+ui_da_prompt <- function(x) {
+  if (grepl(BROWSER_PROMPT_RE, x, perl = TRUE)) {
+    gsub(BROWSER_PROMPT_RE, "D[\\1]> ", x, perl = TRUE)
+  } else {
+    x
+  }
 }
 
 
@@ -111,7 +133,7 @@ shadow_browser_pipes <- function() {
 
 step_shadow_browser <- function(to, from, debug, clear = TRUE) {
   # query debug state
-  processx::conn_write(to, "dapr:::sync_shadow_browser_state(.dapr_con)\n")
+  processx::conn_write(to, "debugadapter:::sync_shadow_browser_state(.con)\n")
   debug <- read_message(debug, level = TRACE)
 
   # flush browser output from querying debugger state
@@ -138,7 +160,6 @@ read_until <- function(con, x, ..., sleep = 0.05) {
   res <- ""
   repeat {
     res_next <- processx::conn_read_chars(con)
-
     if (grepl(DONE_SEMAPHORE, res_next, fixed = TRUE)) {
       res <- trimws(paste0(res, gsub(paste0(DONE_SEMAPHORE, ".*"), "", res_next)), "left")
       attr(res, "done") <- TRUE
@@ -146,7 +167,7 @@ read_until <- function(con, x, ..., sleep = 0.05) {
     }
 
     res <- paste0(res, res_next)
-    if (grepl(x, res, ...)) break
+    if (grepl(x, res, ..., perl = TRUE)) break
     Sys.sleep(sleep)
   }
 

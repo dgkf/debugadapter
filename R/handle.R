@@ -68,7 +68,8 @@ handle.request.setExceptionBreakpoints <- function(x, ..., adapter) {
 #' session.
 #' `r spec("#Requests_SetBreakpoints")`
 handle.request.setBreakpoints <- function(x, ..., adapter) {
-  write_message(adapter$con, response(x, body = debugger_handle(adapter$debugger, x)))
+  bps <- set_breakpoints(adapter, x)
+  write_message(adapter$con, response(x, body = list(breakpoints = bps)))
 }
 
 

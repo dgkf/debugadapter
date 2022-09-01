@@ -37,7 +37,7 @@ write_message <- function(con, content, ...) {
 write_message.default <- function(con, content, level = DEBUG) {
   content <- format_message_content(content)
   log(level, paste0("sent (", nchar(content), ")"), trimws(content))
-  writeChar(message, con)
+  writeChar(content, con)
 }
 
 write_message.processx_connection <- function(con, content, level = DEBUG) {
