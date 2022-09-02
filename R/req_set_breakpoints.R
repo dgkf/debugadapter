@@ -43,14 +43,11 @@ find_line_num_result_to_breakpoint <- function(ln) {
   )
 }
 
-set_breakpoints <- function(adapter, x) {
-  path <- x$arguments$source$path
+set_breakpoints <- function(adapter, breakpoints, sourceModified, source, lines) {
   lines <- lapply(x$arguments$breakpoints, `[[`, "line")
-
   ids <- next_id(adapter, length(lines))
-  bps <- mfapply(verify_breakpoint, line = lines, path = path, id = ids)
-  keys <- vcapply(lines, breakpoint_key, path = path)
-
+  bps <- mfapply(verify_breakpoint, line = lines, path = source$path, id = ids)
+  keys <- vcapply(lines, breakpoint_key, path = source$path)
   adapter$breakpoints[keys] <- bps
   bps
 }

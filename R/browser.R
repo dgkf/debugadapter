@@ -4,6 +4,12 @@ DONE_SEMAPHORE <- "__debugadapter_done__"
 #nolint end
 
 
+dap_browser <- function(...) {
+
+}
+
+
+
 #' Shadow browser
 #'
 #' Run `browser()` in a forked process, presenting a debugger in a familiar
@@ -156,9 +162,11 @@ read_until_browse_prompt <- function(con, ...) {
   read_until(con, BROWSER_PROMPT_RE, ...)
 }
 
-read_until <- function(con, x, ..., sleep = 0.05) {
+read_until <- function(con, x, ..., sleep = 0.05, timeout = Inf) {
   res <- ""
-  repeat {
+
+  start <- Sys.time()
+  while (nchar(res) > 0 || Sys.time() - start < timeout) {
     res_next <- processx::conn_read_chars(con)
     if (grepl(DONE_SEMAPHORE, res_next, fixed = TRUE)) {
       res <- trimws(paste0(res, gsub(paste0(DONE_SEMAPHORE, ".*"), "", res_next)), "left")
@@ -171,6 +179,7 @@ read_until <- function(con, x, ..., sleep = 0.05) {
     Sys.sleep(sleep)
   }
 
+  if (nchar(res) == 0) return(NULL)
   res
 }
 

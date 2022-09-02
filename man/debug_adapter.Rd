@@ -2,6 +2,7 @@
 % Please edit documentation in R/adapter.R
 \name{debug_adapter}
 \alias{debug_adapter}
+\alias{debug_state}
 \alias{$.debug_adapter}
 \alias{$<-.debug_adapter}
 \alias{next_id}
@@ -10,6 +11,14 @@
 \title{Debug Adapter}
 \usage{
 debug_adapter(x)
+
+debug_state(
+  con = NULL,
+  breakpoints = list(),
+  client = list(),
+  capabilities = debug_adapter_capabilities(),
+  debugger = NULL
+)
 
 \method{$}{debug_adapter}(x, name)
 
@@ -23,6 +32,15 @@ supports(x, capability)
 }
 \arguments{
 \item{x}{A connection object used to communicate with the debug client}
+
+\item{con}{An adapter base R connection or processx connection object}
+
+\item{breakpoints}{A list of breakpoints currently in place}
+
+\item{client}{A list of capabilities of the client}
+
+\item{debugger}{A debugger object, used for dispatching behavior based on
+debugger type.}
 }
 \description{
 A simple class which stores state for a debug adapter. Operationally, this is
@@ -39,6 +57,8 @@ an environment for in-place mutation of the adapter state.
 }}
 \section{Functions}{
 \itemize{
+\item \code{debug_state()}: A simple S3 wrapper around an environment used to track debug adapter state.
+
 \item \code{next_id()}: Generate a unique id number for breakpoints
 
 \item \code{supports()}: Test whether adapter supports a capability

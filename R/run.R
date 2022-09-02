@@ -1,6 +1,6 @@
 #' @export
 run <- function(..., debugger) {
-  if (missing(debugger) && interactive()) {
+  if (interactive()) {
     run_background_stdio_connection(...)
   } else {
     run_stdio_connection(..., debugger = debugger)
@@ -20,33 +20,35 @@ run_stdio_connection <- function(host = "localhost", port = 18721, poll = 100, d
   if (!missing(debugger))
     adapter$debugger <- debugger
 
-  repeat {
+  while (is_valid_connection(adapter$con)) {
     handle(adapter)
     Sys.sleep(poll / 1000)
   }
-
-  close(adapter)
 }
 
 run_background_stdio_connection <- function(...) {
-  log(DEBUG, "Starting stdio server, awaiting DAP client ...")
-  adapter <- debug_adapter(callr::r_bg(
-    function(...) debugadapter:::run(..., debugger = debugadapter::debug_stdout_relay()),
+  log(DEBUG, "Starting background stdio server, awaiting DAP client ...")
+  bg <- callr::r_bg(
+    function(...) {
+      options(error = function(e) { print(traceback()); e })
+      debugadapter:::run(...)
+    },
     args = list(...)
-  ))
+  )
 
+  adapter <- debug_adapter(bg$get_output_connection())
   addTaskCallback(name = "Background Debugger", function(...) {
-    echo(DEBUG, adapter$con$read_error())
-
-    # handle any bg processes relayed back to parent session
-    repeat {
-      msg <- read_message(adapter$con$get_output_connection())
-      if (is.null(msg)) break
-      debugger_handle(debug_here(), msg)
+    err <- bg$read_error()
+    if (nchar(err) > 0) {
+      echo(DEBUG, paste0("[PID ", bg$get_pid(), "] ", err))
     }
 
-    # TODO: remove callback when process has finished
-    TRUE
+    # handle any bg processes relayed back to parent session
+    while (resp <- handle(adapter, timeout = 0.05)) {
+      log(DEBUG, resp)
+    }
+
+    bg$is_alive()
   })
 
   invisible(TRUE)

@@ -81,6 +81,12 @@ is_success <- function(x) {
 
 
 
+is_valid_connection <- function(x) {
+  as.numeric(x) %in% getAllConnections()
+}
+
+
+
 spec <- function(anchor = "") {
   specs_url <- "https://microsoft.github.io/debug-adapter-protocol/specification"
   sprintf("(\\url{%s%s})", specs_url, anchor)

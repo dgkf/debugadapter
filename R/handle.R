@@ -8,6 +8,7 @@ handle <- function(x, ...) {
 
 #' @noRd
 handle.NULL <- function(x, ...) {
+  FALSE
 }
 
 #' @noRd
@@ -19,8 +20,8 @@ handle.default <- function(x, ...) {
 }
 
 #' @noRd
-handle.debug_adapter <- function(x, ...) {
-  resp <- read_message(x$con)
+handle.debug_adapter <- function(x, timeout = Inf, ...) {
+  resp <- read_message(x$con, timeout = timeout)
   handle(resp, adapter = x)
 }
 
@@ -45,6 +46,7 @@ handle.request.initialize <- function(x, ..., adapter) {
 
   write_message(adapter$con, response(x, debug_adapter_capabilities()))
   write_message(adapter$con, event("initialized"))
+  TRUE
 }
 
 #' @describeIn protocol-handlers
@@ -52,6 +54,7 @@ handle.request.initialize <- function(x, ..., adapter) {
 #' `r spec("#Requests_Attach")`
 handle.request.attach <- function(x, ..., adapter) {
   write_message(adapter$con, response(x))
+  TRUE
 }
 
 #' @describeIn protocol-handlers
@@ -59,8 +62,12 @@ handle.request.attach <- function(x, ..., adapter) {
 #' session.
 #' `r spec("#Requests_setExceptionBreakpoints")`
 handle.request.setExceptionBreakpoints <- function(x, ..., adapter) {
-  # TODO: use breakpoints
-  write_message(adapter$con, response(x, body = list(breakpoints = list())))
+  x$arguments$adapter <- adapter
+  # TODO: set_exception_breakoints
+  # bps <- do.call(set_exception_breakpoints, x$arguments)
+  bps <- list()
+  write_message(adapter$con, response(x, body = list(breakpoints = bps)))
+  TRUE
 }
 
 #' @describeIn protocol-handlers
@@ -68,8 +75,32 @@ handle.request.setExceptionBreakpoints <- function(x, ..., adapter) {
 #' session.
 #' `r spec("#Requests_SetBreakpoints")`
 handle.request.setBreakpoints <- function(x, ..., adapter) {
-  bps <- set_breakpoints(adapter, x)
+  x$arguments$adapter <- adapter
+  bps <- do.call(set_breakpoints, x$arguments)
   write_message(adapter$con, response(x, body = list(breakpoints = bps)))
+  TRUE
+}
+
+#' @describeIn protocol-handlers
+#' Handle disconnect request to disconnect from the debuggee, end the debug
+#' session and shut itself down.
+#' `r spec("#Requests_Disconnect")`
+handle.request.disconnect <- function(x, ..., adapter) {
+  write_message(adapter$con)
+
+  if (x$arguments$restart) {
+    # TODO: handle restarts
+  }
+
+  if (supports(adapter, "TerminateDebuggee") && x$arguments$terminateDebuggee) {
+    close(adapter$con)
+  }
+
+  if (supports(adapter, "SuspendDebuggee") && x$arguments$suspendDebuggee) {
+    # TODO: handle suspend
+  }
+
+  TRUE
 }
 
 

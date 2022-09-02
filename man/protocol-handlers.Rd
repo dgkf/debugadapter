@@ -6,6 +6,7 @@
 \alias{handle.request.attach}
 \alias{handle.request.setExceptionBreakpoints}
 \alias{handle.request.setBreakpoints}
+\alias{handle.request.disconnect}
 \alias{handle.reverse_request}
 \alias{handle.response}
 \title{Dispatch for protocol messaging}
@@ -19,6 +20,8 @@ handle(x, ...)
 \method{handle}{request.setExceptionBreakpoints}(x, ..., adapter)
 
 \method{handle}{request.setBreakpoints}(x, ..., adapter)
+
+\method{handle}{request.disconnect}(x, ..., adapter)
 
 \method{handle}{reverse_request}(x, ..., adapter)
 
@@ -42,6 +45,10 @@ session.
 \item \code{handle(request.setBreakpoints)}: Update internal adapter breakpoints listing and relay breakpoints to debug
 session.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_SetBreakpoints})
+
+\item \code{handle(request.disconnect)}: Handle disconnect request to disconnect from the debuggee, end the debug
+session and shut itself down.
+(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Disconnect})
 
 \item \code{handle(reverse_request)}: Issue reverse request and await response.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Reverse_Requests_RunInTerminal})

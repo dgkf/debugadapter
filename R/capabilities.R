@@ -21,7 +21,7 @@ debug_adapter_capabilities <- function() {
     "supportsExceptionOptions" = FALSE,
     "supportsValueFormattingOptions" = FALSE,
     "supportsExceptionInfoRequest" = FALSE,
-    "supportTerminateDebuggee" = FALSE,
+    "supportTerminateDebuggee" = TRUE,
     "supportSuspendDebuggee" = FALSE,
     "supportsDelayedStackTraceLoading" = FALSE,
     "supportsLoadedSourcesRequest" = FALSE,

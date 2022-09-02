@@ -2,7 +2,7 @@ read_message <- function(con, ...) {
   UseMethod("read_message")
 }
 
-read_message.default <- function(con, level = DEBUG) {
+read_message.default <- function(con, ..., level = DEBUG) {
   # read until the next "Content-Length" header (flushing any leading whitespace)
   scan(con, what = character(), n = 1, sep = "C", quiet = TRUE)
 
@@ -19,8 +19,10 @@ read_message.default <- function(con, level = DEBUG) {
   obj
 }
 
-read_message.processx_connection <- function(con, level = DEBUG) {
-  x <- read_until(con, "Content-Length: \\d+\\b")
+read_message.processx_connection <- function(con, timeout = Inf, ..., level = DEBUG) {
+  x <- read_until(con, "Content-Length: \\d+\\b", timeout = timeout)
+  if (is.null(x)) return(x)
+
   content_str <- gsub(".*Content-Length: (\\d+)\\s.*", "\\1", x)
   content_length <- as.numeric(content_str)
 
@@ -30,17 +32,17 @@ read_message.processx_connection <- function(con, level = DEBUG) {
   obj
 }
 
-write_message <- function(con, content, ...) {
+write_message <- function(con, content = list(), ...) {
   UseMethod("write_message")
 }
 
-write_message.default <- function(con, content, level = DEBUG) {
+write_message.default <- function(con, content = list(), level = DEBUG) {
   content <- format_message_content(content)
   log(level, paste0("sent (", nchar(content), ")"), trimws(content))
   writeChar(content, con)
 }
 
-write_message.processx_connection <- function(con, content, level = DEBUG) {
+write_message.processx_connection <- function(con, content = list(), level = DEBUG) {
   content <- format_message_content(content)
   log(level, paste0("sent (", nchar(content), ")"), trimws(content))
   processx::conn_write(con, content)
@@ -63,5 +65,4 @@ format_message_content <- function(content) {
     "\r\n",
     content
   )
-
 }
