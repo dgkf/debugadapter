@@ -10,8 +10,6 @@ here <- function() {
 }
 
 debugger_set_breakpoints.debugger_here <- function(debugger, x) {
-
-
   add_calls <- call_from_breakpoint(add)
   remove_calls <- call_from_breakpoint(remove)
 
