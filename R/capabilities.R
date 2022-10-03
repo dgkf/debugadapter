@@ -1,14 +1,14 @@
 debug_adapter_capabilities <- function() {
   # nolint start
   list(
-    "supportsConfigurationDoneRequest" = FALSE,
-    "supportsFunctionBreakpoints" = FALSE,
+    "supportsConfigurationDoneRequest" = TRUE,
+    "supportsFunctionBreakpoints" = TRUE,
     "supportsConditionalBreakpoints" = FALSE,
     "supportsHitConditionalBreakpoints" = FALSE,
     "supportsEvaluateForHovers" = FALSE,
     "exceptionBreakpointFilters" = list(),
     "supportsStepBack" = FALSE,
-    "supportsSetVariable" = FALSE,
+    "supportsSetVariable" = TRUE,
     "supportsRestartFrame" = FALSE,
     "supportsGotoTargetsRequest" = FALSE,
     "supportsStepInTargetsRequest" = FALSE,

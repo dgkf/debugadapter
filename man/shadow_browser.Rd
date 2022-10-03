@@ -12,8 +12,8 @@ Run \code{browser()} in a forked process, presenting a debugger in a familiar
 feed an IDE using the debug adapter protocol.
 }
 \details{
-Unfortunately, navigating history with arrows and using other
-terminal-accepted inputs for line navigation will not work.
+Unfortunately, navigating history with arrows, multiline input and using
+other terminal-accepted inputs for line navigation will not work.
 }
 \examples{
 x <- function() { y() }

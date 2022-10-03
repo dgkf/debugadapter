@@ -14,6 +14,8 @@ log <- function(level, ..., verbose = DEBUG) {
   if (is.logical(verbose))
     verbose <- if (verbose) 2 else 4
 
+  log_prefix <- getOption("debugadapter.log_prefix", "")
+
   level_msg <- switch(
     level,
     "1" = "[TRACE] ",
@@ -23,7 +25,11 @@ log <- function(level, ..., verbose = DEBUG) {
   )
 
   if (verbose <= level)
-    message(sprintf("%s%s", level_msg, paste0(dots, collapse = "\n")))
+    message(paste0(
+      log_prefix,
+      level_msg,
+      paste0(dots, collapse = "\n")
+    ))
 }
 
 echo <- function(level, msg, verbose = DEBUG) {

@@ -14,6 +14,7 @@
 #'
 verify_breakpoint <- function(path, line, id = NULL) {
   pkg <- find_package_name(path)
+
   envir <- if (is.null(pkg)) globalenv() else getNamespace(pkg)
   ln <- utils::findLineNum(path, line, envir = envir)
 
@@ -37,6 +38,14 @@ find_line_num_result_to_breakpoint <- function(ln) {
 
   breakpoint(
     verified = TRUE,
+    source = source(
+      name = basename(ln$filename),
+      path = ln$filename,
+      checksum = checksum(
+        algorithm = "MD5",
+        checksum  = unname(tools::md5sum(ln$filename))
+      )
+    ),
     line = ln$line,
     column = start_end[[1]],
     endColumn = start_end[[2]]
@@ -44,10 +53,11 @@ find_line_num_result_to_breakpoint <- function(ln) {
 }
 
 set_breakpoints <- function(adapter, breakpoints, sourceModified, source, lines) {
-  lines <- lapply(x$arguments$breakpoints, `[[`, "line")
+  lines <- lapply(breakpoints, `[[`, "line")
   ids <- next_id(adapter, length(lines))
   bps <- mfapply(verify_breakpoint, line = lines, path = source$path, id = ids)
   keys <- vcapply(lines, breakpoint_key, path = source$path)
+
   adapter$breakpoints[keys] <- bps
   bps
 }

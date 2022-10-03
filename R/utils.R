@@ -107,3 +107,16 @@ regmatches <- function(pattern, text, ...) {
   rownames(mat) <- full
   mat
 }
+
+
+
+dispatch_on <- function(x) {
+  if (is.null(x)) return(NULL)
+  structure(TRUE, class = x)
+}
+
+
+
+strip_empty_lines <- function(x) {
+  gsub("(\n|\r|\n\r|\r\n){2,}", "\\1", x)
+}

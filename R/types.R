@@ -1,3 +1,9 @@
+public_fields <- function(x) {
+  x[!startsWith(names(x), ".")]
+}
+
+
+
 #' DAP types constructors
 #'
 #' Internal DAP type constructors are built with a mini type syntax, which

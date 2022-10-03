@@ -4,11 +4,6 @@ DONE_SEMAPHORE <- "__debugadapter_done__"
 #nolint end
 
 
-dap_browser <- function(...) {
-
-}
-
-
 
 #' Shadow browser
 #'
@@ -16,8 +11,8 @@ dap_browser <- function(...) {
 #' `browser()` interface, while allowing additional metadata to be captured to
 #' feed an IDE using the debug adapter protocol.
 #'
-#' Unfortunately, navigating history with arrows and using other
-#' terminal-accepted inputs for line navigation will not work.
+#' Unfortunately, navigating history with arrows, multiline input and using
+#' other terminal-accepted inputs for line navigation will not work.
 #'
 #' @inheritParams base::browser
 #'
@@ -150,10 +145,6 @@ step_shadow_browser <- function(to, from, debug, clear = TRUE) {
 
 
 sync_shadow_browser_state <- function(con) {
-  # DAP code here. Communicate with child to provide
-  #   - stackFrame
-  #   - environment vars
-
   write_message(con, list(finished = FALSE), level = TRACE)
   TRUE
 }
@@ -181,16 +172,4 @@ read_until <- function(con, x, ..., sleep = 0.05, timeout = Inf) {
 
   if (nchar(res) == 0) return(NULL)
   res
-}
-
-# replicate utils::setBreakpoint, with our own browser function
-set_breakpoint <- function() { }
-formals(set_breakpoint) <- formals(utils::setBreakpoint)
-body(set_breakpoint) <- {
-  eval(bquote(
-    substitute(
-      .(body(utils::setBreakpoint)),
-      list(browser = as.symbol("shadow_browser"))
-    )
-  ))
 }

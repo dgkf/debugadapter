@@ -46,7 +46,6 @@ handle.request.initialize <- function(x, ..., adapter) {
 
   write_message(adapter$con, response(x, debug_adapter_capabilities()))
   write_message(adapter$con, event("initialized"))
-  TRUE
 }
 
 #' @describeIn protocol-handlers
@@ -54,7 +53,6 @@ handle.request.initialize <- function(x, ..., adapter) {
 #' `r spec("#Requests_Attach")`
 handle.request.attach <- function(x, ..., adapter) {
   write_message(adapter$con, response(x))
-  TRUE
 }
 
 #' @describeIn protocol-handlers
@@ -67,7 +65,16 @@ handle.request.setExceptionBreakpoints <- function(x, ..., adapter) {
   # bps <- do.call(set_exception_breakpoints, x$arguments)
   bps <- list()
   write_message(adapter$con, response(x, body = list(breakpoints = bps)))
-  TRUE
+}
+
+#' @describeIn protocol-handlers
+#' Set function breakpoints
+#' `r spec("#Requests_setFunctionBreakpoints")`
+handle.request.setFunctionBreakpoints <- function(x, ..., adapter) {
+  # TODO: set_function_breakoints
+  # bps <- do.call(set_function_breakpoints, x$arguments)
+  bps <- list()
+  write_message(adapter$con, response(x, body = list(breakpoints = bps)))
 }
 
 #' @describeIn protocol-handlers
@@ -78,7 +85,6 @@ handle.request.setBreakpoints <- function(x, ..., adapter) {
   x$arguments$adapter <- adapter
   bps <- do.call(set_breakpoints, x$arguments)
   write_message(adapter$con, response(x, body = list(breakpoints = bps)))
-  TRUE
 }
 
 #' @describeIn protocol-handlers
@@ -101,6 +107,13 @@ handle.request.disconnect <- function(x, ..., adapter) {
   }
 
   TRUE
+}
+
+#' @describeIn protocol-handlers
+#' Handle configuration done requests.
+#' `r spec("#Requests_ConfigurationDone")`
+handle.request.configurationDone <- function(x, ..., adapter) {
+  write_message(adapter$con)
 }
 
 

@@ -5,8 +5,8 @@
 #'
 #' @param x A connection object used to communicate with the debug client
 #' @keywords internal
-debug_adapter <- function(x) {
-  structure(list(), state = debug_state(x), class = "debug_adapter")
+debug_adapter <- function(x, ...) {
+  structure(list(), state = debug_state(x, ...), class = "debug_adapter")
 }
 
 #' @param con An adapter base R connection or processx connection object

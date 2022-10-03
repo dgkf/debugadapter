@@ -22,14 +22,14 @@ Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
    case `debugadapter` will launch a new debug server, register breakpoints and
    provide a debug `REPL` within your client if it provides the capability and
    allow you to step through the script.
-    
+
 2. `attach` mode, where your client will attach to a running server, running
    as a background process to an interactive session.
-   
+
    ```r
    # start a server in the background
    debugadapter::run()  
-   
+
    # execute some code which will hit a breakpoint and debug as usual
    my_code_to_debug()
    # debugging at my_nested_fn_call(...) #123

@@ -15,7 +15,10 @@ read_message.default <- function(con, ..., level = DEBUG) {
   if (length(body) < 1 || nchar(trimws(body)) < 1) return(NULL)
 
   obj <- parse_message_body(body)
-  log(level, paste0("recieved (", content_length, ")"), trimws(body))
+
+  log_msg <- paste0("recieved (", content_length, ")\n", trimws(body))
+  log(level, strip_empty_lines(log_msg), "\n")
+
   obj
 }
 
@@ -28,7 +31,10 @@ read_message.processx_connection <- function(con, timeout = Inf, ..., level = DE
 
   body <- gsub(".*Content-Length: \\d+", "", x)
   obj <- parse_message_body(body)
-  log(level, paste0("recieved (", content_length, ")"), trimws(body))
+
+  log_msg <- paste0("recieved (", content_length, ")\n", trimws(body))
+  log(level, strip_empty_lines(log_msg), "\n")
+
   obj
 }
 
@@ -37,15 +43,27 @@ write_message <- function(con, content = list(), ...) {
 }
 
 write_message.default <- function(con, content = list(), level = DEBUG) {
-  content <- format_message_content(content)
-  log(level, paste0("sent (", nchar(content), ")"), trimws(content))
-  writeChar(content, con)
+  content_str <- format_message_content(content)
+  log_msg <- paste0("sent (", nchar(content_str), ")\n", trimws(content_str))
+  log(level, strip_empty_lines(log_msg), "\n")
+  writeChar(content_str, con)
+  content
+}
+
+write_message.terminal <- function(con, content = list(), level = DEBUG) {
+  content_str <- format_message_content(content)
+  log_msg <- paste0("sent to stdout (", nchar(content_str), ")\n", trimws(content_str))
+  log(level, strip_empty_lines(log_msg), "\n")
+  writeLines(content_str, con)
+  content
 }
 
 write_message.processx_connection <- function(con, content = list(), level = DEBUG) {
-  content <- format_message_content(content)
-  log(level, paste0("sent (", nchar(content), ")"), trimws(content))
-  processx::conn_write(con, content)
+  content_str <- format_message_content(content)
+  log_msg <- paste0("sent to socket (", nchar(content_str), ")\n", trimws(content_str))
+  log(level, strip_empty_lines(log_msg), "\n")
+  processx::conn_write(con, content_str)
+  content
 }
 
 parse_message_body <- function(msg) {

@@ -1,0 +1,8 @@
+Package: debugme
+Title: A package for demoing debugging behaviors
+Version: 0.0.0.9000
+Authors@R: 
+    person("Bugs", "Bunney", , "bb@acme.com", role = c("aut", "cre"))
+Description: A package for demoing debugging behaviors
+Encoding: UTF-8
+RoxygenNote: 7.2.1

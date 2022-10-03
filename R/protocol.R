@@ -1,4 +1,15 @@
-response <- function(to, body, ...) {
+response_add_fields <- function(to, body, ...) {
+  if (!missing(body)) to$body <- body
+  mask <- list(...)
+
+  for (name in names(mask)) {
+    to[[name]] <- mask[[name]]
+  }
+
+  to
+}
+
+response <- function(to, ...) {
   resp <- list(
     type = "response",
     request_seq = to$seq,
@@ -6,28 +17,14 @@ response <- function(to, body, ...) {
     command = to$command
   )
 
-  if (!missing(body)) resp$body <- body
-  mask <- list(...)
-
-  for (name in names(mask)) {
-    resp[[name]] <- mask[[name]]
-  }
-
-  resp
+  response_add_fields(resp, ...)
 }
 
-event <- function(event, body, ...) {
-  resp <- list(
-    type = "event",
-    event = event
-  )
+is_response <- function(x) {
+  is.list(x) && identical(x$type, "response")
+}
 
-  if (!missing(body)) resp$body <- body
-  mask <- list(...)
-
-  for (name in names(mask)) {
-    resp[[name]] <- mask[[name]]
-  }
-
-  resp
+event <- function(event, ...) {
+  resp <- list(type = "event", event = event)
+  response_add_fields(resp, ...)
 }

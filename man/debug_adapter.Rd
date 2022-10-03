@@ -10,7 +10,7 @@
 \alias{format.debug_adapter}
 \title{Debug Adapter}
 \usage{
-debug_adapter(x)
+debug_adapter(x, ...)
 
 debug_state(
   con = NULL,
