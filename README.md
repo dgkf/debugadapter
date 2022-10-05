@@ -106,21 +106,32 @@ of the processes. The exact layout is in flux as the project matures.
 ```mermaid
 flowchart LR
 
+repl[fa:fa-terminal R Session]
+browser[Shadow Browser]
+server[DAP Server]
+client[DAP Client]
+
 subgraph R Session
-    repl[fa:fa-terminal REPL]
-    brow[Shadow Browser]
-    dap[DAP Server]
+    server -->|<i>stdout</i> <br> debugger <br> breakpoint <br>messages| repl
+    repl -->|"<i>stdin</i> <br> browser() commands"| browser
+    browser -->|"<i>stderr</i> <br> browser() output"| repl
+    browser -->|"<i>tcp socket</i> <br> stopped events"| server
+
+    subgraph fork[Forked <br> Process]
+        browser
+    end
+
+    subgraph bg[Background <br> Process]
+        server
+    end
 end
 
-ide[DAP Client]
+subgraph IDE
+    client
+end
 
-repl -->|stdin| brow
-brow -->|stdout| repl
-
-repl -.-> dap
-brow -.-> dap
-
-dap -.->|socket| ide
+client --->|<i>tcp socket</i> <br> requests| server
+server --->|"<i>tcp socket</i> <br> responses"| client
 ```
 
 ### The _Shadow_ Browser
