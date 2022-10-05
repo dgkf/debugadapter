@@ -4,7 +4,7 @@
 \alias{shadow_browser}
 \title{Shadow browser}
 \usage{
-shadow_browser(..., ui = ui_browser_prompt)
+shadow_browser(..., ui = ui_debugadapter_prompt)
 }
 \description{
 Run \code{browser()} in a forked process, presenting a debugger in a familiar

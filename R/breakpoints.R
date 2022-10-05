@@ -13,10 +13,7 @@
 #' `r spec("#Types_Breakpoint")`
 #'
 verify_breakpoint <- function(path, line, id = NULL) {
-  pkg <- find_package_name(path)
-
-  envir <- if (is.null(pkg)) globalenv() else getNamespace(pkg)
-  ln <- utils::findLineNum(path, line, envir = envir)
+  ln <- get_breakpoint_locations(path, line)
 
   if (length(ln) < 1) {
     message <- paste0(capture.output(ln), collapse = " ")
@@ -27,6 +24,12 @@ verify_breakpoint <- function(path, line, id = NULL) {
 
   bp$id <- id
   bp
+}
+
+get_breakpoint_locations <- function(path, line) {
+  pkg <- find_package_name(path)
+  envir <- if (is.null(pkg)) globalenv() else getNamespace(pkg)
+  utils::findLineNum(path, line, envir = envir)
 }
 
 breakpoint_key <- function(path, lines) {

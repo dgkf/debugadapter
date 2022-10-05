@@ -19,41 +19,31 @@ clear_breakpoints.debugger_here <- function(adapter) {
 
 
 
-trace_breakpoints <- function(adapter) {
-  UseMethod("trace_breakpoints", adapter$debugger)
+trace_breakpoints <- function(breakpoints) {
+  for (b in breakpoints) trace_breakpoint(b)
 }
-
-trace_breakpoints.debugger_here <- function(adapter) {
-  for (b in adapter$breakpoints) trace_breakpoint(b)
-}
-
-
 
 trace_breakpoint <- function(b) {
-  for (location in b$.data) {
-    output <- capture.output(
-      trace(
-        what = .(location$name),
-        signature = .(location$signature),
-        tracer = quote(browser()),
-        where = .(location$env),
-        at = .(location$at),
-        print = FALSE
-      )
+  locations <- get_breakpoint_locations(b$source$path, b$line)
+  for (location in locations) {
+    trace(
+      what = location$name,
+      signature = location$signature,
+      tracer = quote(debugadapter::shadow_browser(skipCalls = 8L)),
+      where = location$env,
+      at = location$at,
+      print = FALSE
     )
-
-    log(DEBUG, output)
   }
 }
 
 untrace_breakpoint <- function(b) {
-  for (location in b$.data) {
-    output <- capture.output(try(silent = TRUE, untrace(
+  locations <- get_breakpoint_locations(b$source$path, b$line)
+  for (location in locations) {
+    untrace(
       what = location$name,
       signature = location$signature,
       where = location$env
-    )))
-
-    log(DEBUG, output)
+    )
   }
 }

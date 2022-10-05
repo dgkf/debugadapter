@@ -4,7 +4,7 @@ DEBUG <- 2
 INFO <- 3
 # nolint end
 
-log <- function(level, ..., verbose = DEBUG) {
+log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
   dots <- list(...)
   for (i in seq_along(dots)) {
     if (is.character(dots[[i]])) next

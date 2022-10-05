@@ -26,7 +26,7 @@ DONE_SEMAPHORE <- "__debugadapter_done__"
 #' x()
 #'
 #' @export
-shadow_browser <- function(..., ui = ui_browser_prompt) {
+shadow_browser <- function(..., ui = ui_debugadapter_prompt) {
   pipe <- shadow_browser_pipes()
 
   # in the parent process, redirect all output to child
@@ -98,7 +98,7 @@ ui_browser_prompt <- function(x) {
 }
 
 
-ui_da_prompt <- function(x) {
+ui_debugadapter_prompt <- function(x) {
   if (grepl(BROWSER_PROMPT_RE, x, perl = TRUE)) {
     gsub(BROWSER_PROMPT_RE, "D[\\1]> ", x, perl = TRUE)
   } else {

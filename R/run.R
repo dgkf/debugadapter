@@ -28,6 +28,8 @@ run_stdio_connection <- function(..., poll = 100, debugger) {
 
 run_tcp_connection <- function(host = "localhost", port = 18721, poll = 100, debugger = stdout()) {
   log(DEBUG, sprintf("Starting tcp server at %s:%s, awaiting DAP client ...", host, port))
+  log(DEBUG, "debugger connection: ", debugger)
+
   con <- socketConnection(host = host, port = port, server = TRUE, open = "r+b")
   adapter <- debug_adapter(con)
 
@@ -47,16 +49,30 @@ run_tcp_connection <- function(host = "localhost", port = 18721, poll = 100, deb
 run_background_connection <- function(...) {
   log(DEBUG, "Starting background tcp server, awaiting DAP client ...")
 
+  # adapter is hosted in the background and handles protocol
   bg <- callr::r_bg(
     function(...) {
-      options(debugadapter.log_prefix = "[BG] ")
+      options(debugadapter.log_prefix = "[BG]")
       options(error = function(e) { print(traceback()); e })
-      debugadapter:::run(...)
+
+      debugger_client <- socketConnection(
+        host = "localhost",
+        port = 18722,
+        server = FALSE
+      )
+
+      debugadapter:::run(..., debugger = debugger_client)
     },
-    args = list(...)
+    args = list(...),
   )
 
-  debugger <- debug_in_foreground(bg$get_output_connection())
+  # debugger is hosted in the foreground and handles debug state
+  debugger <- debug_in_foreground(socketConnection(
+    host = "localhost",
+    port = 18722,
+    server = TRUE,
+    open = "r+b"
+  ))
 
   pid <- bg$get_pid()
   addTaskCallback(name = "Background Debugger", function(...) {

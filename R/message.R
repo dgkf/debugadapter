@@ -4,10 +4,10 @@ read_message <- function(con, ...) {
 
 read_message.default <- function(con, ..., level = DEBUG) {
   # read until the next "Content-Length" header (flushing any leading whitespace)
-  scan(con, what = character(), n = 1, sep = "C", quiet = TRUE)
+  scan(con, what = character(), n = 1, sep = "C", quiet = TRUE, skipNul = TRUE)
 
   # read in content length header, and stream in json body
-  header <- scan(con, what = character(), n = 1, sep = "\n", quiet = TRUE)
+  header <- scan(con, what = character(), n = 1, sep = "\n", quiet = TRUE, skipNul = TRUE)
   content_length <- as.numeric(sub("^C?ontent-Length: ", "", trimws(header)))
 
   # scan to newline preceeding content body, +2 for leading \r\n

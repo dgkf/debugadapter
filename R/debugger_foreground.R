@@ -15,7 +15,6 @@ debugger_handle.debugger_foreground <- function(x, ..., timeout = 0.05) {
 
 
 debugger_fg_handle <- function(x, resp, ...) {
-  log(DEBUG, "Dispatching on: ", resp$command)
   UseMethod("debugger_fg_handle", dispatch_on(resp$command))
 }
 
@@ -28,11 +27,11 @@ debugger_fg_handle.default <- function(x, resp, ...) {
 }
 
 debugger_fg_handle.setExceptionBreakpoints <- function(x, resp, ...) {
-  log(DEBUG, "DEBUGGER SET EXCEPTION BREAKPOINTS")
+  trace_breakpoints(resp$body$breakpoints)
   TRUE
 }
 
 debugger_fg_handle.setBreakpoints <- function(x, resp, ...) {
-  log(DEBUG, "DEBUGGER SET BREAKPOINTS")
+  trace_breakpoints(resp$body$breakpoints)
   TRUE
 }
