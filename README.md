@@ -11,11 +11,6 @@ Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
 > serve as targets for eventual user interfaces and are not yet 
 > functional.
 
-## Getting Started
-
-> IDE-specific getting-started guides will come when the project is 
-> more mature
-
 `debugadapter` operates in one of two ways:
 
 1. `execute` mode, where A file is used as a script for execution, in which 
@@ -36,6 +31,79 @@ Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
    # Browse[0]> 
    # ...
    ```
+
+## Getting Started
+
+First, launch a [debug server](#server), then follow the instructions for your
+[client of choice](#clients).
+
+**1. Installation**
+
+```r
+pak::pkg_install("dgkf/debugadapter")
+```
+
+**2. Starting the Server**
+
+Regardless of your client, running a server is always the same. In `R`, run:
+
+```r
+debugadapter::run()
+```
+
+For testing or development, you may consider setting the option
+`debugadapter.log` to configure the log level. One of `1` (trace),
+`2` (debug) or `3` (info - default).
+
+
+**3. Set a Breakpoint**
+
+From your IDE's `DAP` client, set a breakpoint. See a list of [client
+instructions](#clients) below to configure your IDE.
+
+> Not that debugging breakpoints aren't recognized from the R session until
+> after the next top-level command finishes (see #4 for details).
+
+**4. Debug!**
+
+:construction: Work-in-progress :construction:
+
+Currently, nothing will happen. Communication about the current debugger state
+back to the client is in early development. 
+
+The intention is that debugging within the running R session relays information
+about the current state of the debugger back to your debug client so that the
+current scope and environment are communicated back to your client as you step
+through your code.
+
+Likewise, using your IDE's debug controls to step through code progress 
+debugging on the R session.
+
+### Clients
+
+#### neovim (`nvim-dap`)
+
+We first need to provide neovim with instructions for attaching to a running R
+session when we activate a debugger (most often with a a `:DapContinue` command)
+
+Within your `nvim` configuration files:
+
+```lua
+local dap = require('dap')
+
+dap.adapters.r = {
+  type = 'server',
+  port = 18721,  -- needs to match `debugadapter::run()`'s `port` argument
+}
+
+dap.configurations.r = {
+  {
+    type = 'r',
+    requests = 'attach',
+    name = 'Attach session'
+  }
+}
+```
 
 ## Architecture
 
