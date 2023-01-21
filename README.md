@@ -16,7 +16,7 @@ Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
 1. `execute` mode, where A file is used as a script for execution, in which 
    case `debugadapter` will launch a new debug server, register breakpoints and
    provide a debug `REPL` within your client if it provides the capability and
-   allow you to step through the script.
+   allow you to step through the script (not currently implemented).
 
 2. `attach` mode, where your client will attach to a running server, running
    as a background process to an interactive session.
@@ -34,8 +34,8 @@ Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
 
 ## Getting Started
 
-First, launch a [debug server](#server), then follow the instructions for your
-[client of choice](#clients).
+Follow the instructions below to launch your debug server, then follow the 
+instructions for your [client of choice](#clients).
 
 **1. Installation**
 
