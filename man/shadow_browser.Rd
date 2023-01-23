@@ -4,7 +4,17 @@
 \alias{shadow_browser}
 \title{Shadow browser}
 \usage{
-shadow_browser(..., ui = ui_debugadapter_prompt)
+shadow_browser(
+  ...,
+  ui = ui_debugadapter_prompt,
+  debugger = getOption("debugadapter.debugger"),
+  con = debugger$con \%||\% processx::conn_create_pipepair()
+)
+}
+\arguments{
+\item{ui}{A formatter for the debug prompt}
+
+\item{con}{A connection to which state events will be emitted}
 }
 \description{
 Run \code{browser()} in a forked process, presenting a debugger in a familiar

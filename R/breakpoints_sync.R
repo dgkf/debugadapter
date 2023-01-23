@@ -2,11 +2,6 @@ sync_breakpoints <- function(adapter) {
   UseMethod("sync_breakpoints", adapter$debugger)
 }
 
-sync_breakpoints.debugger_here <- function(adapter) {
-  clear_breakpoints(adapter)
-  trace_breakpoints(adapter)
-}
-
 
 
 clear_breakpoints <- function(adapter) {
@@ -19,17 +14,23 @@ clear_breakpoints.debugger_here <- function(adapter) {
 
 
 
-trace_breakpoints <- function(breakpoints) {
-  for (b in breakpoints) trace_breakpoint(b)
+trace_breakpoints <- function(breakpoints, ...) {
+  for (b in breakpoints) trace_breakpoint(b, ...)
 }
 
-trace_breakpoint <- function(b) {
+trace_breakpoint <- function(b, tracer = quote(browser(skipCalls = 4L))) {
   locations <- get_breakpoint_locations(b$source$path, b$line)
+
+  tracer <- bquote({
+    options(debugadapter.current_breakpoint = .(b))
+    .(tracer)
+  })
+
   for (location in locations) {
     trace(
       what = location$name,
       signature = location$signature,
-      tracer = quote(debugadapter::shadow_browser(skipCalls = 8L)),
+      tracer = tracer,
       where = location$env,
       at = location$at,
       print = FALSE

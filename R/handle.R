@@ -20,9 +20,15 @@ handle.default <- function(x, ...) {
 }
 
 #' @noRd
-handle.debug_adapter <- function(x, timeout = Inf, ...) {
+handle.debug_adapter <- function(x, timeout = 100, ...) {
   resp <- read_message(x$con, timeout = timeout)
   handle(resp, adapter = x)
+}
+
+#' @noRd
+handle.debugger <- function(x, timeout = 100, ...) {
+  resp <- read_message(x$con, timeout = timeout)
+  debugger_handle(x, resp)
 }
 
 

@@ -3,12 +3,16 @@
 \name{dap_types}
 \alias{dap_types}
 \alias{dap_type}
+\alias{to_dap_type}
 \alias{breakpoint}
 \alias{checksum}
 \alias{source}
+\alias{stopped}
 \title{DAP types constructors}
 \usage{
-dap_type(.name, ...)
+dap_type(.name, ..., .attrs = list())
+
+to_dap_type(type, fields, ...)
 
 breakpoint(
   id,
@@ -35,6 +39,16 @@ source(
   adapterData,
   checksums
 )
+
+stopped(
+  reason,
+  description,
+  threadId,
+  preserveFocusHint,
+  text,
+  allThreadsStopped,
+  hitBreakpointIds
+)
 }
 \arguments{
 \item{.name}{The name of DAP type (in snake-case, instead of camel-case)}
@@ -58,5 +72,7 @@ specification as possible.
 \item \code{checksum()}: (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Types_Checksum})
 
 \item \code{source()}: (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Types_Source})
+
+\item \code{stopped()}: (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Events_Stopped})
 
 }}

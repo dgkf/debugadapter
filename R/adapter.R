@@ -6,7 +6,11 @@
 #' @param x A connection object used to communicate with the debug client
 #' @keywords internal
 debug_adapter <- function(x, ...) {
-  structure(list(), state = debug_state(x, ...), class = "debug_adapter")
+  structure(
+    list(),
+    state = adapter_state(x, ...),
+    class = c("debug_adapter", "stateful_struct")
+  )
 }
 
 #' @param con An adapter base R connection or processx connection object
@@ -19,30 +23,34 @@ debug_adapter <- function(x, ...) {
 #' A simple S3 wrapper around an environment used to track debug adapter state.
 #'
 #' @keywords internal
-debug_state <- function(con = NULL, breakpoints = list(), client = list(),
-  capabilities = debug_adapter_capabilities(), debugger = NULL) {
-  structure(
-    as.environment(list(
-      con = con,
-      breakpoints = breakpoints,
-      client = client,
-      capabilities = capabilities,
-      debugger = debugger,
-      breakpoint_id = 0
-    )),
-    class = "debug_state"
-  )
+adapter_state <- function(
+  con = NULL,
+  breakpoints = list(),
+  client = list(),
+  capabilities = debug_adapter_capabilities(),
+  debugger = NULL
+) {
+  fields <- as.environment(list(
+    con = con,
+    breakpoints = breakpoints,
+    client = client,
+    capabilities = capabilities,
+    debugger = debugger,
+    breakpoint_id = 0
+  ))
+
+  structure(fields, class = "adapter_state")
 }
 
 #' @describeIn debug_adapter
 #' Accessors for the debug adapter
-`$.debug_adapter` <- function(x, name) {
+`$.stateful_struct` <- function(x, name) {
   attr(x, "state")[[as.character(name)]]
 }
 
 #' @describeIn debug_adapter
 #' Assignment to stateful components of the debug adapter
-`$<-.debug_adapter` <- function(x, name, value) {
+`$<-.stateful_struct` <- function(x, name, value) {
   state <- attr(x, "state")
   state[[as.character(name)]] <- value
   x

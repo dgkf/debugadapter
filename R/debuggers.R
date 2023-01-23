@@ -9,6 +9,21 @@ NULL
 
 
 
+debugger <- function(con = NULL, subclasses = c()) {
+  fields <- as.environment(list(
+    con = con,
+    breakpoints = list()
+  ))
+
+  structure(
+    list(),
+    state = fields,
+    class = c(subclasses, "debugger", "stateful_struct")
+  )
+}
+
+
+
 debugger_handle <- function(x, ...) {
   UseMethod("debugger_handle")
 }
@@ -27,5 +42,5 @@ debugger_handle.default <- function(x, ...) {
 #' Debugging commands are sent to a terminal managed by the client.
 #' @export
 debug_in_client_terminal <- function(con) {
-  structure(con, class = c("debugger_client_terminal", "debugger"))
+  debugger(con, "debugger_client_terminal")
 }

@@ -24,7 +24,12 @@ is_response <- function(x) {
   is.list(x) && identical(x$type, "response")
 }
 
-event <- function(event, ...) {
+event <- function(body, ..., event = attr(body, "event")) {
+  if (is.character(body)) {
+    event <- body
+    body <- NULL
+  }
+
   resp <- list(type = "event", event = event)
-  response_add_fields(resp, ...)
+  response_add_fields(resp, body, ...)
 }

@@ -14,6 +14,8 @@ DONE_SEMAPHORE <- "__debugadapter_done__"
 #' Unfortunately, navigating history with arrows, multiline input and using
 #' other terminal-accepted inputs for line navigation will not work.
 #'
+#' @param ui A formatter for the debug prompt
+#' @param con A connection to which state events will be emitted
 #' @inheritParams base::browser
 #'
 #' @examples
@@ -26,7 +28,13 @@ DONE_SEMAPHORE <- "__debugadapter_done__"
 #' x()
 #'
 #' @export
-shadow_browser <- function(..., ui = ui_debugadapter_prompt) {
+shadow_browser <- function(
+  ...,
+  ui = ui_debugadapter_prompt,
+  debugger = getOption("debugadapter.debugger"),
+  con = debugger$con %||% processx::conn_create_pipepair()
+) {
+
   pipe <- shadow_browser_pipes()
 
   # in the parent process, redirect all output to child
@@ -37,7 +45,7 @@ shadow_browser <- function(..., ui = ui_debugadapter_prompt) {
   addTaskCallback(
     name = "close shadow browser",
     function(expr, value, ok, visible) {
-      # for some reason callbacks are called within browser at lower stack depth?
+      # callbacks are called within browser at lower stack depth?
       still_browsing <- sys.nframe() > 1
 
       if (!still_browsing) {
@@ -63,16 +71,19 @@ shadow_browser <- function(..., ui = ui_debugadapter_prompt) {
       # read our first message, the initial prompt
       msg <- read_until_browse_prompt(pipe$from_parent)
 
-      # present cleaner stdout input to user
+      # remove our input from captured stdin (input + browser prompt)
       msg <- trimws(msg, "left")
-      if (startsWith(msg, input)) msg <- trimws(substring(msg, nchar(input) + 1), "left")
+      if (startsWith(msg, input))
+        msg <- trimws(substring(msg, nchar(input) + 1), "left")
+
+      # parse browser prompt and present debug ui
       message("\r", ui(msg), appendLF = FALSE)
       if (isTRUE(attr(msg, "done"))) break
 
-      debug <- step_shadow_browser(pipe$to_parent, pipe$from_parent, pipe$read_debug)
+      debug <- step_shadow_browser(pipe$to_parent, pipe$from_parent, con)
       if (isTRUE(debug$finished)) break
 
-      # TODO: handle multiline input
+      # TODO: handle multiline input? control characters (probably not)?
       input <- processx::conn_read_lines(orig_stdin, n = 1)
       processx::conn_write(pipe$to_parent, paste0(input, "\n"))
     }
@@ -85,7 +96,7 @@ shadow_browser <- function(..., ui = ui_debugadapter_prompt) {
   }
 
   parent <- parent.frame()
-  parent$.con <- pipe$write_debug
+  parent$.con <- con
 
   expr <- substitute(browser(...))
   eval.parent(expr)
@@ -117,25 +128,20 @@ shadow_browser_pipes <- function() {
   # child stdout --> parent stdout
   to_parent <- processx::conn_create_pipepair()
 
-  # child debug mesages --> DAP
-  debug     <- processx::conn_create_pipepair()
-
   list(
     to_child = to_child[[1]],
     to_parent = to_parent[[1]],
     from_child = to_parent[[2]],
-    from_parent = to_child[[2]],
-    write_debug = debug[[1]],
-    read_debug = debug[[2]]
+    from_parent = to_child[[2]]
   )
 }
 
 
 
-step_shadow_browser <- function(to, from, debug, clear = TRUE) {
-  # query debug state
+step_shadow_browser <- function(to, from, .con, clear = TRUE) {
+  # query debug state on parent process & await reply before continuing
   processx::conn_write(to, "debugadapter:::sync_shadow_browser_state(.con)\n")
-  debug <- read_message(debug, level = TRACE)
+  debug <- read_message(.con, level = TRACE)
 
   # flush browser output from querying debugger state
   read_until(from, BROWSER_PROMPT_RE)
@@ -145,6 +151,21 @@ step_shadow_browser <- function(to, from, debug, clear = TRUE) {
 
 
 sync_shadow_browser_state <- function(con) {
+  breakpoint <- getOption("debugadapter.current_breakpoint", list())
+  msg <- event(stopped(
+    reason = "breakpoint",
+    description = "Paused on breakpoint",
+    allThreadsStopped = TRUE,
+    hitBreakpointIds = breakpoint$id
+  ))
+
+  # send stopped event to client, await threads request
+  write_message(con, msg)
+  resp <- read_message(con)
+
+  log(DEBUG, resp)
+
+  # reply to sync request to allow debugger to continue
   write_message(con, list(finished = FALSE), level = TRACE)
   TRUE
 }

@@ -2,13 +2,15 @@
 #' Handle debugging calls locally ('here').
 #' @export
 debug_in_foreground <- function(con) {
-  structure(con, class = c("debugger_foreground", "debugger", class(con)))
+  x <- debugger(con, "debugger_foreground")
+  options(debugadapter.debugger = x)
+  x
 }
 
 
 
 debugger_handle.debugger_foreground <- function(x, ..., timeout = 0.05) {
-  resp <- read_message(x, timeout = timeout)
+  resp <- read_message(x$con, timeout = timeout)
   debugger_fg_handle(x, resp, ...)
 }
 
@@ -26,12 +28,19 @@ debugger_fg_handle.default <- function(x, resp, ...) {
   TRUE
 }
 
-debugger_fg_handle.setExceptionBreakpoints <- function(x, resp, ...) {
-  trace_breakpoints(resp$body$breakpoints)
-  TRUE
-}
-
 debugger_fg_handle.setBreakpoints <- function(x, resp, ...) {
-  trace_breakpoints(resp$body$breakpoints)
+  x$breakpoints <- lapply(resp$body$breakpoints, as.breakpoint)
+  tracer <- quote(debugadapter::shadow_browser(skipCalls = 8L))
+
+  print("HERE")
+
+  log(DEBUG,
+    sprintf("setting %.f breakpoints\n%s",
+      length(x$breakpoints),
+      paste(lapply(x$breakpoints, format), collapse = "\n")
+    )
+  )
+
+  trace_breakpoints(x$breakpoints, tracer = tracer)
   TRUE
 }

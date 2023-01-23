@@ -44,13 +44,14 @@ find_line_num_result_to_breakpoint <- function(ln) {
     source = source(
       name = basename(ln$filename),
       path = ln$filename,
-      checksum = checksum(
+      checksums = checksum(
         algorithm = "MD5",
         checksum  = unname(tools::md5sum(ln$filename))
       )
     ),
     line = ln$line,
     column = start_end[[1]],
+    endLine = ln$line,
     endColumn = start_end[[2]]
   )
 }

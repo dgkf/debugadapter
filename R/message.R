@@ -1,17 +1,25 @@
-read_message <- function(con, ...) {
+read_message <- function(x, ...) {
   UseMethod("read_message")
 }
 
-read_message.default <- function(con, ..., level = DEBUG) {
+read_message.debug_adapter <- function(x, ...) {
+  read_message(x$con, ...)
+}
+
+read_message.debugger <- function(x, ...) {
+  read_message(x$con, ...)
+}
+
+read_message.default <- function(x, ..., level = DEBUG) {
   # read until the next "Content-Length" header (flushing any leading whitespace)
-  scan(con, what = character(), n = 1, sep = "C", quiet = TRUE, skipNul = TRUE)
+  scan(x, what = character(), n = 1, sep = "C", quiet = TRUE, skipNul = TRUE)
 
   # read in content length header, and stream in json body
-  header <- scan(con, what = character(), n = 1, sep = "\n", quiet = TRUE, skipNul = TRUE)
+  header <- scan(x, what = character(), n = 1, sep = "\n", quiet = TRUE, skipNul = TRUE)
   content_length <- as.numeric(sub("^C?ontent-Length: ", "", trimws(header)))
 
   # scan to newline preceeding content body, +2 for leading \r\n
-  body <- readChar(con, nchars = content_length + 2L, useBytes = TRUE)
+  body <- readChar(x, nchars = content_length + 2L, useBytes = TRUE)
   if (length(body) < 1 || nchar(trimws(body)) < 1) return(NULL)
 
   obj <- parse_message_body(body)
@@ -22,8 +30,8 @@ read_message.default <- function(con, ..., level = DEBUG) {
   obj
 }
 
-read_message.processx_connection <- function(con, timeout = Inf, ..., level = DEBUG) {
-  x <- read_until(con, "Content-Length: \\d+\\b", timeout = timeout)
+read_message.processx_connection <- function(x, timeout = Inf, ..., level = DEBUG) {
+  x <- read_until(x, "Content-Length: \\d+\\b", timeout = timeout)
   if (is.null(x)) return(x)
 
   content_str <- gsub(".*Content-Length: (\\d+)\\s.*", "\\1", x)
@@ -38,23 +46,35 @@ read_message.processx_connection <- function(con, timeout = Inf, ..., level = DE
   obj
 }
 
-write_message <- function(con, content = list(), ...) {
+write_message <- function(x, content = list(), ...) {
   UseMethod("write_message")
 }
 
-write_message.default <- function(con, content = list(), level = DEBUG) {
-  content_str <- format_message_content(content)
-  log_msg <- paste0("sent (", nchar(content_str), ")\n", trimws(content_str))
-  log(level, strip_empty_lines(log_msg), "\n")
-  writeChar(content_str, con)
+write_message.debug_adapter <- function(x, ...) {
+  write_message(x$con, ...)
+}
+
+write_message.debugger <- function(x, ...) {
+  write_message(x$con, ...)
+}
+
+write_message.NULL <- function(x, content = list()) {
   content
 }
 
-write_message.terminal <- function(con, content = list(), level = DEBUG) {
+write_message.default <- function(x, content = list(), level = DEBUG) {
+  content_str <- format_message_content(content)
+  log_msg <- paste0("sent (", nchar(content_str), ")\n", trimws(content_str))
+  log(level, strip_empty_lines(log_msg), "\n")
+  writeChar(content_str, x)
+  content
+}
+
+write_message.terminal <- function(x, content = list(), level = DEBUG) {
   content_str <- format_message_content(content)
   log_msg <- paste0("sent to stdout (", nchar(content_str), ")\n", trimws(content_str))
   log(level, strip_empty_lines(log_msg), "\n")
-  writeLines(content_str, con)
+  writeLines(content_str, x)
   content
 }
 
@@ -83,4 +103,15 @@ format_message_content <- function(content) {
     "\r\n",
     content
   )
+}
+
+echo_responses <- function(res, to) {
+  if (is_response(res)) write_message(to, res)
+  res
+}
+
+flush_messages <- function(from, to, timeout = 0.05) {
+  while (is_response(res <- read_message(from, timeout = timeout))) {
+    write_message(to, res)
+  }
 }

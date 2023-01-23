@@ -2,9 +2,9 @@
 % Please edit documentation in R/adapter.R
 \name{debug_adapter}
 \alias{debug_adapter}
-\alias{debug_state}
-\alias{$.debug_adapter}
-\alias{$<-.debug_adapter}
+\alias{adapter_state}
+\alias{$.stateful_struct}
+\alias{$<-.stateful_struct}
 \alias{next_id}
 \alias{supports}
 \alias{format.debug_adapter}
@@ -12,7 +12,7 @@
 \usage{
 debug_adapter(x, ...)
 
-debug_state(
+adapter_state(
   con = NULL,
   breakpoints = list(),
   client = list(),
@@ -20,9 +20,9 @@ debug_state(
   debugger = NULL
 )
 
-\method{$}{debug_adapter}(x, name)
+\method{$}{stateful_struct}(x, name)
 
-\method{$}{debug_adapter}(x, name) <- value
+\method{$}{stateful_struct}(x, name) <- value
 
 next_id(adapter, n = 1)
 
@@ -48,16 +48,16 @@ an environment for in-place mutation of the adapter state.
 }
 \section{Methods (by generic)}{
 \itemize{
-\item \code{$}: Accessors for the debug adapter
-
-\item \code{`$`(debug_adapter) <- value}: Assignment to stateful components of the debug adapter
-
 \item \code{format(debug_adapter)}: Convert a debug adapter to a string representation
 
 }}
 \section{Functions}{
 \itemize{
-\item \code{debug_state()}: A simple S3 wrapper around an environment used to track debug adapter state.
+\item \code{adapter_state()}: A simple S3 wrapper around an environment used to track debug adapter state.
+
+\item \code{$}: Accessors for the debug adapter
+
+\item \code{`$`(stateful_struct) <- value}: Assignment to stateful components of the debug adapter
 
 \item \code{next_id()}: Generate a unique id number for breakpoints
 
