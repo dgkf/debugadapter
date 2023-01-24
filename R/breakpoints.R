@@ -19,7 +19,7 @@ verify_breakpoint <- function(path, line, id = NULL) {
     message <- paste0(capture.output(ln), collapse = " ")
     bp <- breakpoint(verified = FALSE, message = message)
   } else {
-    bp <- find_line_num_result_to_breakpoint(ln[[1L]])
+    bp <- line_num_as_breakpoint(ln[[1L]])
   }
 
   bp$id <- id
@@ -28,15 +28,25 @@ verify_breakpoint <- function(path, line, id = NULL) {
 
 get_breakpoint_locations <- function(path, line) {
   pkg <- find_package_name(path)
-  envir <- if (is.null(pkg)) globalenv() else getNamespace(pkg)
-  utils::findLineNum(path, line, envir = envir)
+  if (is.null(pkg)) {
+    utils::findLineNum(path, line)
+  } else {
+    envir <- getNamespace(pkg)
+    utils::findLineNum(
+      path,
+      line,
+      nameonly = TRUE,  # this could default to FALSE, but with option
+      envir = envir,
+      lastenv = envir
+    )
+  }
 }
 
 breakpoint_key <- function(path, lines) {
   paste0(path, "#", lines)
 }
 
-find_line_num_result_to_breakpoint <- function(ln) {
+line_num_as_breakpoint <- function(ln) {
   start_end <- line_code_span(ln$filename, ln$line)
 
   breakpoint(
@@ -61,7 +71,6 @@ set_breakpoints <- function(adapter, breakpoints, sourceModified, source, lines)
   ids <- next_id(adapter, length(lines))
   bps <- mfapply(verify_breakpoint, line = lines, path = source$path, id = ids)
   keys <- vcapply(lines, breakpoint_key, path = source$path)
-
   adapter$breakpoints[keys] <- bps
   bps
 }

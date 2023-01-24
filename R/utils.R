@@ -11,21 +11,21 @@
 #' @rdname vapplys
 #' @inheritParams base::vapply
 #' @keywords internal
-vlapply <- function(..., FUN.VALUE = logical(1L)) {
+vlapply <- function(..., FUN.VALUE = logical(1L)) {  # nolint
   vapply(..., FUN.VALUE = FUN.VALUE)
 }
 
 #' @rdname vapplys
-vcapply <- function(..., FUN.VALUE = character(1L)) {
+vcapply <- function(..., FUN.VALUE = character(1L)) {  # nolint
   vapply(..., FUN.VALUE = FUN.VALUE)
 }
 
 #' @rdname vapplys
-vnapply <- function(..., FUN.VALUE = numeric(1L)) {
+vnapply <- function(..., FUN.VALUE = numeric(1L)) {  # nolint
   vapply(..., FUN.VALUE = FUN.VALUE)
 }
 
-mfapply <- function(..., SIMPLIFY = FALSE) {
+mfapply <- function(..., SIMPLIFY = FALSE) {  # nolint
   mapply(..., SIMPLIFY = SIMPLIFY)
 }
 
@@ -40,9 +40,13 @@ mfapply <- function(..., SIMPLIFY = FALSE) {
 #' @keywords internal
 find_package_root <- function(path = ".") {
   if (path == ".") path <- getwd()
-  while (dirname(path) != path) {
+  repeat {
     if (file.exists(file.path(path, "DESCRIPTION")))
       return(path)
+
+    if (dirname(path) == path)
+      break
+
     path <- dirname(path)
   }
 

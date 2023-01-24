@@ -9,7 +9,7 @@ debug_in_foreground <- function(con) {
 
 
 
-debugger_handle.debugger_foreground <- function(x, ..., timeout = 0.05) {
+debugger_handle.debugger_foreground <- function(x, resp, ..., timeout = 0.05) {
   resp <- read_message(x$con, timeout = timeout)
   debugger_fg_handle(x, resp, ...)
 }
@@ -29,10 +29,10 @@ debugger_fg_handle.default <- function(x, resp, ...) {
 }
 
 debugger_fg_handle.setBreakpoints <- function(x, resp, ...) {
+  log(DEBUG, "received breakpoints: \n", resp$body$breakpoints)
+
   x$breakpoints <- lapply(resp$body$breakpoints, as.breakpoint)
   tracer <- quote(debugadapter::shadow_browser(skipCalls = 8L))
-
-  print("HERE")
 
   log(DEBUG,
     sprintf("setting %.f breakpoints\n%s",

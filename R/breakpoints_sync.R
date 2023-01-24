@@ -15,10 +15,14 @@ clear_breakpoints.debugger_here <- function(adapter) {
 
 
 trace_breakpoints <- function(breakpoints, ...) {
-  for (b in breakpoints) trace_breakpoint(b, ...)
+  for (b in breakpoints) {
+    trace_breakpoint(b, ...)
+  }
 }
 
 trace_breakpoint <- function(b, tracer = quote(browser(skipCalls = 4L))) {
+  if (!b$verified) return()
+
   locations <- get_breakpoint_locations(b$source$path, b$line)
 
   tracer <- bquote({

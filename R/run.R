@@ -27,15 +27,14 @@ run_tcp_connection <- function(
   poll = 100,
   debugger = NULL
 ) {
-  log(
-    DEBUG,
-    sprintf("Starting tcp server at %s:%s, awaiting DAP client ...", host, port)
-  )
+
+  msg <- sprintf("Starting tcp server at %s:%s, awaiting DAP client ...", host, port)
+  log(DEBUG, msg)
 
   con <- socketConnection(host = host, port = port, server = TRUE, open = "r+b")
-  adapter <- debug_adapter(con)
   log(DEBUG, "Connection established")
 
+  adapter <- debug_adapter(con, debugger = debugger)
   while (is_valid_connection(adapter$con)) {
     # process latest messages from adapter client, echoing output to debugger
     echo_responses(handle(adapter), to = debugger)
@@ -55,7 +54,7 @@ run_background_connection <- function(...) {
   # adapter is hosted in the background and handles protocol
   bg <- callr::r_bg(
     function(...) {
-      options(debugadapter.log_prefix = "[BG]")
+      options(debugadapter.log_prefix = "[BG SRV]")
       debugger_client <- socketConnection(
         host = "localhost",
         port = 18722,
@@ -87,7 +86,7 @@ run_background_connection <- function(...) {
     }
 
     # handle any bg processes relayed back to parent session
-    while (debugger_handle(debugger, timeout = 0.05)) { }
+    while (debugger_handle(debugger, timeout = 0.05)) NULL
 
     bg$is_alive()
   })

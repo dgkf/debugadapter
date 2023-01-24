@@ -1,7 +1,5 @@
-#nolint start
-BROWSER_PROMPT_RE <- "Browse\\[(?<frame>-?\\d+)\\]>\\s*$"
-DONE_SEMAPHORE <- "__debugadapter_done__"
-#nolint end
+BROWSER_PROMPT_RE <- "Browse\\[(?<frame>-?\\d+)\\]>\\s*$"   # nolint
+DONE_SEMAPHORE <- "__debugadapter_done__"  # nolint
 
 
 
@@ -152,6 +150,7 @@ step_shadow_browser <- function(to, from, .con, clear = TRUE) {
 
 sync_shadow_browser_state <- function(con) {
   breakpoint <- getOption("debugadapter.current_breakpoint", list())
+
   msg <- event(stopped(
     reason = "breakpoint",
     description = "Paused on breakpoint",
@@ -181,7 +180,8 @@ read_until <- function(con, x, ..., sleep = 0.05, timeout = Inf) {
   while (nchar(res) > 0 || Sys.time() - start < timeout) {
     res_next <- processx::conn_read_chars(con)
     if (grepl(DONE_SEMAPHORE, res_next, fixed = TRUE)) {
-      res <- trimws(paste0(res, gsub(paste0(DONE_SEMAPHORE, ".*"), "", res_next)), "left")
+      res_next <- gsub(paste0(DONE_SEMAPHORE, ".*"), "", res_next)
+      res <- trimws(paste0(res, res_next), "left")
       attr(res, "done") <- TRUE
       return(res)
     }
