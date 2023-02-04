@@ -19,7 +19,7 @@ validate_type_fields <- function(values, spec) {
     stop("all fields must be named.")
   }
 
-  req_fields <- grep("?$", names(spec), value = TRUE, invert = TRUE)
+  req_fields <- grep("\\?$", names(spec), value = TRUE, invert = TRUE)
   if (any(i <- !req_fields %in% valnames)) {
     stop(paste0(
       "required fields missing: ",
