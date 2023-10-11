@@ -7,9 +7,14 @@ Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
 
 > **Status**
 > 
-> Still heavily under development. Some of the examples provided here
-> serve as targets for eventual user interfaces and are not yet 
-> functional.
+> On hiatus. The most actionable outcome is that this work requires a new
+> `pre-task-callback` in R, allowing for syncing the debug state before
+> running R code. Without this, the debugger state will lag behind an
+> R session by one top-level call. 
+>
+> Working around this limitation introduced more complexity to the project
+> than I care to try to tackle at this time.
+> 
 
 `debugadapter` operates in one of two ways:
 
