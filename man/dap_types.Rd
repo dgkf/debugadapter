@@ -10,18 +10,7 @@
 \usage{
 dap_type(.name, ...)
 
-breakpoint(
-  id,
-  verified,
-  message,
-  source,
-  line,
-  column,
-  endLine,
-  endColumn,
-  instructionReference,
-  offset
-)
+breakpoint(name = class_missing, age = class_missing)
 
 checksum(algorithm, checksum)
 
