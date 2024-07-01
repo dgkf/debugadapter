@@ -1,4 +1,4 @@
-> ![IMPORTANT]  
+> [!IMPORTANT]  
 > This project is in early development. It's probably not useful. These steps
 > are only for confirming that your configuration is correct.
 
@@ -24,7 +24,7 @@ our editor of choice and our R repl can be clients of this server.
 
 ## Confirm
 
-> ![NOTE]  
+> [!NOTE]  
 > Due to limitations in an active R REPL, communication with our R session
 > always _lags by one top-level command_.
 
