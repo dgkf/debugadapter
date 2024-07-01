@@ -5,15 +5,12 @@
 An implementation of the [Debug Adapter
 Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
 
-> **Status**
-> 
-> On hiatus. The most actionable outcome is that this work requires a new
-> `pre-task-callback` in R, allowing for syncing the debug state before
-> running R code. Without this, the debugger state will lag behind an
-> R session by one top-level call. 
+> **Status: Reincarnated! :zombie:** 
 >
-> Working around this limitation introduced more complexity to the project
-> than I care to try to tackle at this time.
+> It recently came to my attention that R received an experimentel feature
+> in `devel` that would make this project much more realistic. 
+>
+> Current work focuses on this feature to test the viability for this purpose.
 > 
 
 `debugadapter` operates in one of two ways:
@@ -137,63 +134,55 @@ multiple R processes:
 ```mermaid
 sequenceDiagram
 
-participant ide as Client
+participant ide as Client (IDE)
 participant dap as DAP Server
 participant r   as REPL
-participant b   as Forked Process
 
-ide->>dap: attach DAP
+alt Attach Mode
+    r->>dap: debugadapter::run()
 
-rect rgba(128, 128, 128, 0.1)
-    Note over dap,r: Task Callback
-    r->>+dap: request sync debug state
-    dap->>-r: reply sync debug state
-end
+    Note over ide: Set breakpoint
+    ide->>dap: attach DAP
+    ide-->>dap: listen for updates
 
-r->>b: shadow_browser()
-
-loop Debugger REPL
-    b->>+r: stdout `Browse[1]>`
-
-    rect rgba(128, 128, 128, 0.1)
-        Note over ide,dap: Output suppressed
-        r->>+b: request debug state
-        b->>-r: reply debug state
-        r->>dap: update server state
+    alt REPL taskCallback
+        r->>+dap: request sync debug state
+        dap->>-r: reply sync debug state
+    else browser() browser.hook
+        r->>dap: send debug state
         dap->>ide: update client state
+        r->>+dap: request sync debug state
+        dap->>-r: reply sync debug state
     end
+else Launch Mode
+    Note over ide: Set breakpoint
+    Note over ide: Debug
 
-    alt Client-based stepping
-        ide->>dap: step request
-        dap->>r: step signal
-        r->>b: step signal
-    else REPL-based stepping
-        r->>-b: stdin
-    end
+    ide->>dap: launch DAP
+    ide-->>dap: listen for updates
+    dap->>r: launch R in background
+
+    ide->>+dap: send state
+    dap->>+r: send updates
+    r->>-dap: send state
+    dap->>-ide: update client state
 end
 ```
 
 This is all orchestrated using a web of connections between each 
 of the processes. The exact layout is in flux as the project matures.
 
+### Attach Mode
+
 ```mermaid
 flowchart LR
 
 repl[fa:fa-terminal R Session]
-browser[Shadow Browser]
 server[DAP Server]
 client[DAP Client]
 
-subgraph R Session
-    server -->|<i>stdout</i> <br> debugger <br> breakpoint <br>messages| repl
-    repl -->|"<i>stdin</i> <br> browser() commands"| browser
-    browser -->|"<i>stderr</i> <br> browser() output"| repl
-    browser -->|"<i>tcp socket</i> <br> stopped events"| server
-
-    subgraph fork[Forked <br> Process]
-        browser
-    end
-
+subgraph Attached R Session
+    server <-->|<i>stdio</i>| repl
     subgraph bg[Background <br> Process]
         server
     end
@@ -203,30 +192,31 @@ subgraph IDE
     client
 end
 
-client --->|<i>tcp socket</i> <br> requests| server
-server --->|"<i>tcp socket</i> <br> responses"| client
+client <-->|<i>tcp</i>| server
 ```
 
-### The _Shadow_ Browser
+### Launch Mode
 
-The "shadow" browser ("shadow" here in the vein of the "shadow DOM"
-in the web world - a mirror of the current, displayed environment 
-for managing state) is a `dapr`-specific browser prompt, which
-executes additional code in the background to synchronize debugger
-state with a client. Since the `browser()` prompt is rather rigidly 
-defined in the internals of the R language, the way this works is 
-messy to say the least. 
+```mermaid
+flowchart LR
 
-When active, `stdin` and `stdout` are redirected to a child process.
-User commands are sent back to the parent process's `stdin` and 
-the output is sent back to the parent using `stderr` (using messages)
-Additional calls are made to inspect the state of the debugger after
-each step and to send this information to the client. These calls
-are omitted from the output that is relayed back to the parent. 
+repl[fa:fa-terminal R Session]
+server[DAP Server]
+client[DAP Client]
 
-A task callback is used to restore the original `stdin` and `stdout`, 
-and to close all the connections used to communicate to the child
-process once the browser state has returns to the top level.
+subgraph Launched R Session
+    server <-->|<i>stdio</i>| repl
+    subgraph bg[Subprocess]
+        repl
+    end
+end
+
+subgraph IDE
+    client
+end
+
+client <-->|<i>tcp</i>| server
+```
 
 ## Prior Art
 

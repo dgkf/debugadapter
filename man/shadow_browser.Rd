@@ -16,7 +16,9 @@ Unfortunately, navigating history with arrows, multiline input and using
 other terminal-accepted inputs for line navigation will not work.
 }
 \examples{
-x <- function() { y() }
+x <- function() {
+  y()
+}
 y <- function() {
   shadow_browser(skipCalls = 4)
   print("hello, world")
