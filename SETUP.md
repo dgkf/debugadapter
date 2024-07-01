@@ -35,9 +35,11 @@ session should emit a flurry of debug statements starting with:
 #> [BG<pid22527>][DEBUG] Connection established
 ```
 
+---
+
 # Editors
 
-## neovim
+## `neovim`
 
 ### Pre-requisites
 
@@ -85,3 +87,32 @@ dap.configurations.r = {
 In a new `neovim` session, hop into any `.R` file. You run `:DapContinue` to
 attempt a connection with your R repl. Next, head to the section on
 [confirming your setup](#confirm).
+
+## `helix`
+
+### Configure
+
+In your [`languages.toml`](https://docs.helix-editor.com/languages.html)
+
+```toml
+[[language]]
+name = "r"
+
+[language.debugger]
+name = "r debugger"
+transport = "tcp"
+
+[[language.debugger.templates]]
+name = "attach"
+request = "attach"
+completion = [ ]
+args = { }
+```
+
+### Start Debugging
+
+Open a `.R` file in a new `helix` session and run 
+`:debug-remote 127.0.0.1:18721`. If you don't immediately get an error saying
+you've failed to connect, it's probably working. Next, head to the section on
+[confirming your setup](#confirm).
+
