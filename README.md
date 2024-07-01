@@ -1,4 +1,4 @@
-# `debugadapter` 
+# `debugadapter`
 
 ![developing](https://img.shields.io/badge/lifecycle-developing-orange)
 
@@ -6,19 +6,18 @@ An implementation of the [Debug Adapter
 Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
 
 > **Status**
-> 
+>
 > On hiatus. The most actionable outcome is that this work requires a new
 > `pre-task-callback` in R, allowing for syncing the debug state before
 > running R code. Without this, the debugger state will lag behind an
-> R session by one top-level call. 
+> R session by one top-level call.
 >
 > Working around this limitation introduced more complexity to the project
 > than I care to try to tackle at this time.
-> 
 
 `debugadapter` operates in one of two ways:
 
-1. `execute` mode, where A file is used as a script for execution, in which 
+1. `execute` mode, where A file is used as a script for execution, in which
    case `debugadapter` will launch a new debug server, register breakpoints and
    provide a debug `REPL` within your client if it provides the capability and
    allow you to step through the script (not currently implemented).
@@ -28,18 +27,18 @@ Protocol](https://microsoft.github.io/debug-adapter-protocol/) for R
 
    ```r
    # start a server in the background
-   debugadapter::run()  
+   debugadapter::run()
 
    # execute some code which will hit a breakpoint and debug as usual
    my_code_to_debug()
    # debugging at my_nested_fn_call(...) #123
-   # Browse[0]> 
+   # Browse[0]>
    # ...
    ```
 
 ## Getting Started
 
-Follow the instructions below to launch your debug server, then follow the 
+Follow the instructions below to launch your debug server, then follow the
 instructions for your [client of choice](#clients).
 
 **1. Installation**
@@ -60,7 +59,6 @@ For testing or development, you may consider setting the option
 `debugadapter.log` to configure the log level. One of `1` (trace),
 `2` (debug) or `3` (info - default).
 
-
 **3. Set a Breakpoint**
 
 From your IDE's `DAP` client, set a breakpoint. See a list of [client
@@ -74,14 +72,14 @@ instructions](#clients) below to configure your IDE.
 :construction: Work-in-progress :construction:
 
 Currently, nothing will happen. Communication about the current debugger state
-back to the client is in early development. 
+back to the client is in early development.
 
 The intention is that debugging within the running R session relays information
 about the current state of the debugger back to your debug client so that the
 current scope and environment are communicated back to your client as you step
 through your code.
 
-Likewise, using your IDE's debug controls to step through code progress 
+Likewise, using your IDE's debug controls to step through code progress
 debugging on the R session.
 
 ### Clients
@@ -99,12 +97,16 @@ local dap = require('dap')
 dap.adapters.r = {
   type = 'server',
   port = 18721,  -- needs to match `debugadapter::run()`'s `port` argument
+  executable = {
+      command = "R",
+      args = { "--slave", "-e", "debugadapter::run()" },
+  },
 }
 
 dap.configurations.r = {
   {
     type = 'r',
-    requests = 'attach',
+    request = 'attach',
     name = 'Attach session'
   }
 }
@@ -116,7 +118,7 @@ Attaching an interactive R session relies on the coordination of
 multiple R processes:
 
 1. **DAP Server**  
-   A socket-based server used for communicating with the debug client. 
+   A socket-based server used for communicating with the debug client.
    When run in the background, the debugger state is synchronized after
    each top-level task and before entering a REPL-based debugger.
 
@@ -127,10 +129,10 @@ multiple R processes:
 
 1. **forked `browser()` process**  
    When `browser()` would be called, it is instead launched in a forked
-   process, which allows the interactive R session to step through the 
+   process, which allows the interactive R session to step through the
    debugger while also querying for various debugger context required
    by the debug client. Unfortunately, this means that this approach is
-   currently not supported on Windows. 
+   currently not supported on Windows.
 
 ### Debugging Loop
 
@@ -173,7 +175,7 @@ loop Debugger REPL
 end
 ```
 
-This is all orchestrated using a web of connections between each 
+This is all orchestrated using a web of connections between each
 of the processes. The exact layout is in flux as the project matures.
 
 ```mermaid
@@ -210,21 +212,21 @@ server --->|"<i>tcp socket</i> <br> responses"| client
 ### The _Shadow_ Browser
 
 The "shadow" browser ("shadow" here in the vein of the "shadow DOM"
-in the web world - a mirror of the current, displayed environment 
+in the web world - a mirror of the current, displayed environment
 for managing state) is a `dapr`-specific browser prompt, which
 executes additional code in the background to synchronize debugger
-state with a client. Since the `browser()` prompt is rather rigidly 
-defined in the internals of the R language, the way this works is 
-messy to say the least. 
+state with a client. Since the `browser()` prompt is rather rigidly
+defined in the internals of the R language, the way this works is
+messy to say the least.
 
 When active, `stdin` and `stdout` are redirected to a child process.
-User commands are sent back to the parent process's `stdin` and 
+User commands are sent back to the parent process's `stdin` and
 the output is sent back to the parent using `stderr` (using messages)
 Additional calls are made to inspect the state of the debugger after
 each step and to send this information to the client. These calls
-are omitted from the output that is relayed back to the parent. 
+are omitted from the output that is relayed back to the parent.
 
-A task callback is used to restore the original `stdin` and `stdout`, 
+A task callback is used to restore the original `stdin` and `stdout`,
 and to close all the connections used to communicate to the child
 process once the browser state has returns to the top level.
 
@@ -232,12 +234,12 @@ process once the browser state has returns to the top level.
 
 ### [`vscDebugger`](https://github.com/ManuelHentschel/vscDebugger)
 
-An existing implementation that originated as a VSCode extension. 
+An existing implementation that originated as a VSCode extension.
 While that package seems to work well in VSCode, it has been on
-a long path to being more editor agnostic. `debugadapter` deviates from 
-the design choices of this package in two key ways: 
+a long path to being more editor agnostic. `debugadapter` deviates from
+the design choices of this package in two key ways:
 
 - A pure R package for simpler portability
-- Prioritzing a use case where an arbitrary terminal can be 
-  attached to the debug client and integrate with an interactive 
+- Prioritzing a use case where an arbitrary terminal can be
+  attached to the debug client and integrate with an interactive
   R session.
