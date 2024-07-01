@@ -1,7 +1,7 @@
-#nolint start
+# nolint start
 BROWSER_PROMPT_RE <- "Browse\\[(?<frame>-?\\d+)\\]>\\s*$"
 DONE_SEMAPHORE <- "__debugadapter_done__"
-#nolint end
+# nolint end
 
 
 
@@ -17,7 +17,9 @@ DONE_SEMAPHORE <- "__debugadapter_done__"
 #' @inheritParams base::browser
 #'
 #' @examples
-#' x <- function() { y() }
+#' x <- function() {
+#'   y()
+#' }
 #' y <- function() {
 #'   shadow_browser(skipCalls = 4)
 #'   print("hello, world")
@@ -30,7 +32,7 @@ shadow_browser <- function(..., ui = ui_debugadapter_prompt) {
   pipe <- shadow_browser_pipes()
 
   # in the parent process, redirect all output to child
-  orig_stdin  <- processx::conn_set_stdin(pipe$from_child, drop = FALSE)
+  orig_stdin <- processx::conn_set_stdin(pipe$from_child, drop = FALSE)
   orig_stdout <- processx::conn_set_stdout(pipe$to_child, drop = FALSE)
 
   # revert our stdin/stdout once we've returned to top level repl
@@ -112,13 +114,13 @@ ui_debugadapter_prompt <- function(x) {
 #'
 shadow_browser_pipes <- function() {
   # parent stdin --> child stdin
-  to_child  <- processx::conn_create_pipepair()
+  to_child <- processx::conn_create_pipepair()
 
   # child stdout --> parent stdout
   to_parent <- processx::conn_create_pipepair()
 
   # child debug mesages --> DAP
-  debug     <- processx::conn_create_pipepair()
+  debug <- processx::conn_create_pipepair()
 
   list(
     to_child = to_child[[1]],
@@ -170,6 +172,8 @@ read_until <- function(con, x, ..., sleep = 0.05, timeout = Inf) {
     Sys.sleep(sleep)
   }
 
-  if (nchar(res) == 0) return(NULL)
+  if (nchar(res) == 0) {
+    return(NULL)
+  }
   res
 }

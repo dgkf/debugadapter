@@ -41,8 +41,9 @@ mfapply <- function(..., SIMPLIFY = FALSE) {
 find_package_root <- function(path = ".") {
   if (path == ".") path <- getwd()
   while (dirname(path) != path) {
-    if (file.exists(file.path(path, "DESCRIPTION")))
+    if (file.exists(file.path(path, "DESCRIPTION"))) {
       return(path)
+    }
     path <- dirname(path)
   }
 
@@ -50,10 +51,11 @@ find_package_root <- function(path = ".") {
 }
 
 
-
 find_package_name <- function(path = ".") {
   root <- find_package_root(path)
-  if (is.null(root)) return(NULL)
+  if (is.null(root)) {
+    return(NULL)
+  }
   read.dcf(file.path(root, "DESCRIPTION"), fields = "Package")[[1]]
 }
 
@@ -80,18 +82,15 @@ is_success <- function(x) {
 }
 
 
-
 is_valid_connection <- function(x) {
   as.numeric(x) %in% getAllConnections()
 }
-
 
 
 spec <- function(anchor = "") {
   specs_url <- "https://microsoft.github.io/debug-adapter-protocol/specification"
   sprintf("(\\url{%s%s})", specs_url, anchor)
 }
-
 
 
 regmatches <- function(pattern, text, ...) {
@@ -109,14 +108,20 @@ regmatches <- function(pattern, text, ...) {
 }
 
 
-
 dispatch_on <- function(x) {
-  if (is.null(x)) return(NULL)
+  if (is.null(x)) {
+    return(NULL)
+  }
   structure(TRUE, class = x)
 }
 
 
-
 strip_empty_lines <- function(x) {
   gsub("(\n|\r|\n\r|\r\n){2,}", "\\1", x)
+}
+
+
+#' @export
+srcpos <- function() {
+  .Call("srcpos")
 }

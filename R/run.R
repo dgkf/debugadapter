@@ -51,9 +51,15 @@ run_background_connection <- function(...) {
 
   # adapter is hosted in the background and handles protocol
   bg <- callr::r_bg(
-    function(...) {
-      options(debugadapter.log_prefix = "[BG]")
-      options(error = function(e) { print(traceback()); e })
+    function(..., log_level) {
+      options(
+        debugadapter.log_prefix = paste0("[BG<pid", Sys.getpid(), ">]"),
+        debugadapter.log = log_level,
+        error = function(e) {
+          print(traceback())
+          e
+        }
+      )
 
       debugger_client <- socketConnection(
         host = "localhost",
@@ -63,7 +69,7 @@ run_background_connection <- function(...) {
 
       debugadapter:::run(..., debugger = debugger_client)
     },
-    args = list(...),
+    args = list(..., log_level = getOption("debugadapter.log")),
   )
 
   # debugger is hosted in the foreground and handles debug state
@@ -76,14 +82,9 @@ run_background_connection <- function(...) {
 
   pid <- bg$get_pid()
   addTaskCallback(name = "Background Debugger", function(...) {
-    err <- bg$read_error()
-    if (nchar(err) > 0) {
-      log(DEBUG, sprintf("background debugger started on PID: %.f", pid))
-      echo(DEBUG, err)
-    } else {
-      status <- if (bg$is_alive()) "alive" else "stopped"
-      log(DEBUG, sprintf("background debugger on PID: %.f (%s)", pid, status))
-    }
+    status <- if (bg$is_alive()) "alive" else "stopped"
+    log(DEBUG, sprintf("background debugger on PID: %.f (%s)", pid, status))
+    echo(DEBUG, bg$read_error())
 
     # handle any bg processes relayed back to parent session
     while (debugger_handle(debugger, timeout = 0.05)) { }
