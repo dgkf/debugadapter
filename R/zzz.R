@@ -1,5 +1,13 @@
 .onLoad <- function(libname, pkgname) {
-  if (!has_browser_hook()) warn_no_browser_hook()
+  session_has_browser <- has_browser_hook()
+  child_has_browser <- has_child_browser_hook()
+
+  if (!session_has_browser) {
+    packageStartupMessage(message_no_browser_hook())
+  } else if (!child_has_browser) {
+    packageStartupMessage(message_no_child_browser_hook())
+  }
+
   options(browser.hook = browser_hook)
 }
 
@@ -14,7 +22,7 @@
 has_browser_hook <- function() {
   tryCatch(
     {
-      eval(quote(browser(ignoreHook = TRUE)), globalenv())
+      eval(quote(browser(expr = FALSE, ignoreHook = TRUE)), globalenv())
       TRUE
     },
     error = function(e) {
@@ -23,13 +31,28 @@ has_browser_hook <- function() {
   )
 }
 
-#' Emit a warning that necessary browser hook feature is not available
-#'
-#' @return Used for side effect of emitting a warning
-#'
-warn_no_browser_hook <- function() {
-  warning(
-    call. = FALSE,
+has_child_browser_hook <- function() {
+  tryCatch(
+    {
+      callr::r(
+        function(pkg, ...) {
+          # make sure we don't recursively spawn child processes
+          if (!is.na(Sys.getenv("CALLR_IS_RUNNING"))) {
+            return(TRUE)
+          }
+          getNamespace(pkg)[["has_browser_hook"]]()
+        },
+        args = list(pkg = packageName())
+      )
+    },
+    error = function(e) {
+      FALSE
+    }
+  )
+}
+
+message_no_browser_hook <- function() {
+  paste0(
     paste0(collapse = "\n", strwrap(paste0(
       packageName(),
       " requires a version of R with `option(browser.hook)`, ",
@@ -43,5 +66,14 @@ warn_no_browser_hook <- function() {
     "  $ ./configure CPPFLAGS=-DUSE_BROWSER_HOOK\n",
     "  $ ./make",
     "\n"
+  )
+}
+
+message_no_child_browser_hook <- function() {
+  paste0(
+    "Subprocesses spawned using `callr` are not using a version of R ",
+    "that has browser hooks enabled. ",
+    packageName(),
+    " will not work properly when using background processes."
   )
 }

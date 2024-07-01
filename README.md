@@ -83,29 +83,7 @@ debugging on the R session.
 
 ### Clients
 
-#### neovim (`nvim-dap`)
-
-We first need to provide neovim with instructions for attaching to a running R
-session when we activate a debugger (most often with a a `:DapContinue` command)
-
-Within your `nvim` configuration files:
-
-```lua
-local dap = require('dap')
-
-dap.adapters.r = {
-  type = 'server',
-  port = 18721,  -- needs to match `debugadapter::run()`'s `port` argument
-}
-
-dap.configurations.r = {
-  {
-    type = 'r',
-    requests = 'attach',
-    name = 'Attach session'
-  }
-}
-```
+See `SETUP.md` for client-specific configuration details.
 
 ## Architecture
 
