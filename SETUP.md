@@ -1,4 +1,4 @@
-> ![IMPORTANT]
+> ![IMPORTANT]  
 > This project is in early development. It's probably not useful. These steps
 > are only for confirming that your configuration is correct.
 
@@ -16,7 +16,7 @@ debugadapter::run()
 ```
 
 This launches a background process that will serve the debugger protocol. Both
-our editor of choice and our R repl can be clients of this server. 
+our editor of choice and our R repl can be clients of this server.
 
 ## Configure Editor & Start Debugging
 
@@ -24,11 +24,11 @@ our editor of choice and our R repl can be clients of this server.
 
 ## Confirm
 
-> ![NOTE]
+> ![NOTE]  
 > Due to limitations in an active R REPL, communication with our R session
 > always _lags by one top-level command_.
 
-If everything is working properly, **the next command you execute** in your R 
+If everything is working properly, **the next command you execute** in your R
 session should emit a flurry of debug statements starting with:
 
 ```r
@@ -82,6 +82,6 @@ dap.configurations.r = {
 
 ### Start Debugging
 
-In a new `neovim` session, hop into any `.R` file. You run `:DapContinue` to 
-attempt a connection with your R repl. Next, head to the section on 
-[confirming your setup][#confirm].
+In a new `neovim` session, hop into any `.R` file. You run `:DapContinue` to
+attempt a connection with your R repl. Next, head to the section on
+[confirming your setup](#confirm).
