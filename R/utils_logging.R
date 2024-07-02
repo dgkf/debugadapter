@@ -16,7 +16,6 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
   }
 
   log_prefix <- getOption("debugadapter.log_prefix", "")
-
   level_msg <- switch(level,
     "1" = "[TRACE] ",
     "2" = "[DEBUG] ",
@@ -34,5 +33,7 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
 }
 
 echo <- function(level, msg, verbose = DEBUG) {
-  if (nchar(msg) > 0 && verbose <= level) message(msg)
+  if (nchar(msg) > 0 && verbose <= level) {
+    message(trimws(msg, which = "right"))
+  }
 }

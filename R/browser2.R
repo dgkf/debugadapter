@@ -1,4 +1,5 @@
-browser_hook <- function(hook, condition, envir) {
+#' @export
+dap_browser_hook <- function(hook, condition, envir) {
   options(browser.hook = hook)
 
   cat(

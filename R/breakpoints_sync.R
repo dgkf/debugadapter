@@ -29,7 +29,12 @@ trace_breakpoint <- function(b) {
     trace(
       what = location$name,
       signature = location$signature,
-      tracer = quote(debugadapter::shadow_browser(skipCalls = 8L)),
+      tracer = bquote({
+        hook <- getNamespace(.(packageName()))[["dap_browser_hook"]]
+        orig <- options(browser.hook = hook)
+        on.exit(options(orig))
+        browser(skipCalls = 4L)
+      }),
       where = location$env,
       at = location$at,
       print = FALSE

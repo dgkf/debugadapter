@@ -8,7 +8,7 @@
     packageStartupMessage(message_no_child_browser_hook())
   }
 
-  options(browser.hook = browser_hook)
+  options(browser.hook = dap_browser_hook)
 }
 
 #' Tests whether the current version of R has recent changes to the browser

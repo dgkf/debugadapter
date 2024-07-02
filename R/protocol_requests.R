@@ -9,6 +9,7 @@ request <- function(command, arguments) {
 }
 
 request_run_in_terminal <- function(cmd, path = ".") {
+  log(DEBUG, "requesting runInTerminal")
   cwd <- find_package_root(path)
 
   args <- list(

@@ -39,6 +39,7 @@ mfapply <- function(..., SIMPLIFY = FALSE) {
 #' @name package-file-helpers
 #' @keywords internal
 find_package_root <- function(path = ".") {
+  if (is.null(path)) return(NULL)
   if (path == ".") path <- getwd()
   while (dirname(path) != path) {
     if (file.exists(file.path(path, "DESCRIPTION"))) {

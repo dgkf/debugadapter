@@ -47,6 +47,7 @@ run_tcp_connection <- function(host = "localhost", port = 18721, poll = 100, deb
 }
 
 run_background_connection <- function(...) {
+  cat("est")
   log(DEBUG, "Starting background tcp server, awaiting DAP client ...")
 
   # adapter is hosted in the background and handles protocol

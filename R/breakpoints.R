@@ -27,6 +27,18 @@ verify_breakpoint <- function(path, line, id = NULL) {
 }
 
 get_breakpoint_locations <- function(path, line) {
+  # TODO:
+  #   will fail to verify for files with unknown source. This could be
+  #   standalone scripts or packages not yet installed.
+  #
+  # for scripts:
+  #   - should source the file
+  #   - maybe consider isolating only the code for that object to avoid
+  #     long-running code unrelated to the breakpoint?
+  #
+  # for packages:
+  #   - ideally error so that we don't need to manage package installation
+
   pkg <- find_package_name(path)
   envir <- if (is.null(pkg)) globalenv() else getNamespace(pkg)
   utils::findLineNum(path, line, envir = envir)
@@ -55,12 +67,16 @@ find_line_num_result_to_breakpoint <- function(ln) {
   )
 }
 
-set_breakpoints <- function(adapter, breakpoints, sourceModified, source, lines) {
+set_breakpoints <- function(
+    adapter,
+    breakpoints,
+    sourceModified, # nolint
+    source,
+    lines) {
   lines <- lapply(breakpoints, `[[`, "line")
   ids <- next_id(adapter, length(lines))
   bps <- mfapply(verify_breakpoint, line = lines, path = source$path, id = ids)
   keys <- vcapply(lines, breakpoint_key, path = source$path)
-
   adapter$breakpoints[keys] <- bps
   bps
 }
