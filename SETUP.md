@@ -2,7 +2,12 @@
 > This project is in early development. It's probably not useful. These steps
 > are only for confirming that your configuration is correct.
 
-# Setup
+1. [Setup Guide](#setup-guide)
+2. [Editor Configurations](#editor-configurations)
+   1. [neovim](#neovim)
+   2. [helix](#helix)
+
+# Setup Guide
 
 ## Start the Server
 
@@ -21,6 +26,7 @@ our editor of choice and our R repl can be clients of this server.
 ## Configure Editor & Start Debugging
 
 1. [neovim](#neovim)
+2. [helix](#helix)
 
 ## Confirm
 
@@ -37,7 +43,7 @@ session should emit a flurry of debug statements starting with:
 
 ---
 
-# Editors
+# Editor Configurations
 
 ## `neovim`
 
