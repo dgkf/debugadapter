@@ -46,52 +46,30 @@ run_tcp_connection <- function(host = "localhost", port = 18721, poll = 100, deb
   invisible(TRUE)
 }
 
-run_background_connection <- function(...) {
-  cat("est")
+run_background_connection <- function(port = 18721, ...) {
   log(DEBUG, "Starting background tcp server, awaiting DAP client ...")
+  adapter_process <- start_adapter_in_background(port = port, ...)
+  debuggee <- attach_runtime(port = port, timeout = 5)
 
-  # adapter is hosted in the background and handles protocol
-  bg <- callr::r_bg(
-    function(..., log_level) {
-      options(
-        debugadapter.log_prefix = paste0("[BG<pid", Sys.getpid(), ">]"),
-        debugadapter.log = log_level,
-        error = function(e) {
-          print(traceback())
-          e
-        }
-      )
-
-      debugger_client <- socketConnection(
-        host = "localhost",
-        port = 18722,
-        server = FALSE
-      )
-
-      debugadapter:::run(..., debugger = debugger_client)
-    },
-    args = list(..., log_level = getOption("debugadapter.log")),
-  )
-
-  # debugger is hosted in the foreground and handles debug state
-  debugger <- debug_in_foreground(socketConnection(
-    host = "localhost",
-    port = 18722,
-    server = TRUE,
-    open = "r+b"
-  ))
-
-  pid <- bg$get_pid()
-  addTaskCallback(name = "Background Debugger", function(...) {
-    status <- if (bg$is_alive()) "alive" else "stopped"
+  pid <- adapter_process$get_pid()
+  addTaskCallback(name = "Synchronize Debugger", function(...) {
+    status <- if (adapter_process$is_alive()) "alive" else "stopped"
     log(DEBUG, sprintf("background debugger on PID: %.f (%s)", pid, status))
-    echo(DEBUG, bg$read_error())
+    echo(DEBUG, adapter_process$read_error())
+
+    if (!adapter_process$is_alive()) {
+      close(debuggee$connection)
+      adapter_process$get_result()
+    }
 
     # handle any bg processes relayed back to parent session
-    while (debugger_handle(debugger, timeout = 0.05)) { }
+    while (!is.null(msg <- read_message(debuggee, timeout = 0.05))) {
+      debuggee$handle(msg)
+    }
 
-    bg$is_alive()
+    # keep callback as long as adapter is alive
+    adapter_process$is_alive()
   })
 
-  invisible(TRUE)
+  invisible(debuggee)
 }

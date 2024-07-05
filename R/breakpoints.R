@@ -12,18 +12,31 @@
 #' `r spec("#Types_SourceBreakpoint")`
 #' `r spec("#Types_Breakpoint")`
 #'
-verify_breakpoint <- function(path, line, id = NULL) {
-  ln <- get_breakpoint_locations(path, line)
+verify_breakpoint <- function(breakpoint) {
+  ln <- get_breakpoint_locations(breakpoint$source$path, breakpoint$line)
 
   if (length(ln) < 1) {
-    message <- paste0(capture.output(ln), collapse = " ")
-    bp <- breakpoint(verified = FALSE, message = message)
+    breakpoint$verified <- FALSE
+    breakpoint$reason <- "failed"
+    breakpoint$message <- paste0(capture.output(ln), collapse = " ")
+    return(breakpoint)
   } else {
-    bp <- find_line_num_result_to_breakpoint(ln[[1L]])
-  }
+    # TODO: handle multiple locations for a single breakpoint
+    ln <- ln[[1]]
+    start_end <- line_code_span(ln$filename, ln$line)
+    breakpoint$verified <- TRUE
+    breakpoint$reason <- NULL
+    breakpoint$line <- ln$line
+    breakpoint$column <- start_end[[1]]
+    breakpoint$endColumn <- start_end[[2]]
+    breakpoint$source$name <- basename(ln$filename)
+    breakpoint$source$checksum <- checksum(
+      algorithm = "MD5",
+      checksum = unname(tools::md5sum(ln$filename))
+    )
 
-  bp$id <- id
-  bp
+    breakpoint
+  }
 }
 
 get_breakpoint_locations <- function(path, line) {
@@ -44,39 +57,21 @@ get_breakpoint_locations <- function(path, line) {
   utils::findLineNum(path, line, envir = envir)
 }
 
-breakpoint_key <- function(path, lines) {
-  paste0(path, "#", lines)
-}
-
-find_line_num_result_to_breakpoint <- function(ln) {
-  start_end <- line_code_span(ln$filename, ln$line)
-
-  breakpoint(
-    verified = TRUE,
-    source = source(
-      name = basename(ln$filename),
-      path = ln$filename,
-      checksum = checksum(
-        algorithm = "MD5",
-        checksum  = unname(tools::md5sum(ln$filename))
-      )
-    ),
-    line = ln$line,
-    column = start_end[[1]],
-    endColumn = start_end[[2]]
+as_pending_breakpoints <- function(args, ids) {
+  mfapply(
+    breakpoint,
+    id = ids,
+    verified = FALSE,
+    source = list(args$source),
+    line = if (is.null(args$breakpoints)) {
+      args$lines  # deprecated
+    } else {
+      vnapply(args$breakpoints, `[[`, "line")
+    },
+    reason = "pending"
   )
 }
 
-set_breakpoints <- function(
-    adapter,
-    breakpoints,
-    sourceModified, # nolint
-    source,
-    lines) {
-  lines <- lapply(breakpoints, `[[`, "line")
-  ids <- next_id(adapter, length(lines))
-  bps <- mfapply(verify_breakpoint, line = lines, path = source$path, id = ids)
-  keys <- vcapply(lines, breakpoint_key, path = source$path)
-  adapter$breakpoints[keys] <- bps
-  bps
+breakpoint_key <- function(breakpoint) {
+  paste0(breakpoint$source$path, "#", breakpoint$line)
 }

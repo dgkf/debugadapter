@@ -12,7 +12,8 @@ Authors@R:
     )
 Description: What the package does (one paragraph).
 Imports:
-    processx
+	R6,
+	callr
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

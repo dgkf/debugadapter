@@ -8,7 +8,8 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
   dots <- list(...)
   for (i in seq_along(dots)) {
     if (is.character(dots[[i]])) next
-    dots[[i]] <- paste0(capture.output(dots[[i]]), collapse = "\n")
+    if (is.numeric(dots[[i]])) next
+    dots[[i]] <- paste0(paste0(capture.output(dots[[i]]), collapse = "\n"), "\n")
   }
 
   if (is.logical(verbose)) {
@@ -27,7 +28,7 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
     message(paste0(
       log_prefix,
       level_msg,
-      paste0(dots, collapse = "\n")
+      paste0(dots, collapse = "")
     ))
   }
 }
