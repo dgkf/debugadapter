@@ -12,6 +12,7 @@
 #' `r spec("#Types_SourceBreakpoint")`
 #' `r spec("#Types_Breakpoint")`
 #'
+#' @importFrom tools md5sum
 verify_breakpoint <- function(breakpoint) {
   ln <- get_breakpoint_locations(breakpoint$source$path, breakpoint$line)
 
@@ -21,7 +22,8 @@ verify_breakpoint <- function(breakpoint) {
     breakpoint$message <- paste0(capture.output(ln), collapse = " ")
     return(breakpoint)
   } else {
-    # TODO: handle multiple locations for a single breakpoint
+    # if we have even just a single location, then the source is known 
+    # and we can verify the breakpoint
     ln <- ln[[1]]
     start_end <- line_code_span(ln$filename, ln$line)
     breakpoint$verified <- TRUE
@@ -39,6 +41,16 @@ verify_breakpoint <- function(breakpoint) {
   }
 }
 
+#' Find Source Locations based Breakpoint Location
+#'
+#' A single breakpoint may be best served by tracing multiple source code
+#' locations. For example, functions loaded from a package are traced
+#' separately from the namespaced function calls, resulting in multiple
+#' traced locations based on a single source and line number.
+#'
+#' @param path A file path of the source code to trace
+#' @param line The line number in the source file to trace
+#'
 get_breakpoint_locations <- function(path, line) {
   # TODO:
   #   will fail to verify for files with unknown source. This could be
@@ -74,4 +86,33 @@ as_pending_breakpoints <- function(args, ids) {
 
 breakpoint_key <- function(breakpoint) {
   paste0(breakpoint$source$path, "#", breakpoint$line)
+}
+
+trace_breakpoints <- function(breakpoints) {
+  for (b in breakpoints) trace_breakpoint(b)
+}
+
+trace_breakpoint <- function(b) {
+  locations <- get_breakpoint_locations(b$source$path, b$line)
+  for (location in locations) {
+    suppressMessages(trace(
+      what = location$name,
+      signature = location$signature,
+      tracer = quote(browser(skipCalls = 4L)),
+      where = location$env,
+      at = location$at,
+      print = FALSE
+    ))
+  }
+}
+
+untrace_breakpoint <- function(b) {
+  locations <- get_breakpoint_locations(b$source$path, b$line)
+  for (location in locations) {
+    suppressMessages(untrace(
+      what = location$name,
+      signature = location$signature,
+      where = location$env
+    ))
+  }
 }

@@ -4,7 +4,11 @@ debuggee <- R6::R6Class(
   public = list(
     #' @field breakpoints currently tracked breakpoints
     breakpoints = list(),
-    initialize = function(...) super$initialize(...),
+    initialize = function(...) {
+      # the 'client' we're connected to is the adapter
+      self$arguments <- list(clientName = "adapter")
+      super$initialize(...)
+    },
     handle = function(x, ...) r_handle(x, ..., debuggee = self)
   )
 )
@@ -52,5 +56,5 @@ r_handle.request.setBreakpoints <- function(x, ..., debuggee) {
   # preprocessed the setBreakpoints request into pending breakpoints
   bps <- lapply(x$arguments$breakpoints, verify_breakpoint)
   trace_breakpoints(bps)
-  write_message(debuggee$connection, response(x, body = list(breakpoints = bps)))
+  write_message(debuggee, response(x, body = list(breakpoints = bps)))
 }

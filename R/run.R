@@ -52,6 +52,8 @@ run_background_connection <- function(port = 18721, ...) {
   debuggee <- attach_runtime(port = port, timeout = 5)
 
   pid <- adapter_process$get_pid()
+  options(browser.hook = browser_hook_sync_debugger(debuggee))
+
   addTaskCallback(name = "Synchronize Debugger", function(...) {
     status <- if (adapter_process$is_alive()) "alive" else "stopped"
     log(DEBUG, sprintf("background debugger on PID: %.f (%s)", pid, status))
@@ -59,7 +61,14 @@ run_background_connection <- function(port = 18721, ...) {
 
     if (!adapter_process$is_alive()) {
       close(debuggee$connection)
-      adapter_process$get_result()
+      tryCatch(
+        adapter_process$get_result(),
+        error = function(e) {
+          e$message <- "in debug adapter running as background process"
+          show(e)
+          return()
+        }
+      )
     }
 
     # handle any bg processes relayed back to parent session

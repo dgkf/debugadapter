@@ -1,9 +1,10 @@
 #' Protocol Message Reading and Parsing
 #'
-#' @param con A connection to read from or write to
+#' @param x A connection (or similar) to read from or write to
 #' @param content The message contents to write
 #' @param timeout A maximum time in seconds to wait to receive a new message
 #' @param verbose A logical value or integer log level flag
+#' @param name An optional string to use for the connection for debug logs
 #'
 #' @name messages
 NULL
@@ -44,35 +45,11 @@ read_message.default <- function(x, ..., verbose = DEBUG, name = NULL) {
   obj <- parse_message_body(body)
 
   log_header <- paste0(
-    "recieved (", content_length, ")",
+    "received (", content_length, ")",
     if (!is.null(name)) paste0(" from ", name), "\n"
   )
 
   log(verbose, log_header, strip_empty_lines(trimws(body)), "\n")
-  obj
-}
-
-#' @export
-#' @name messages
-read_message.processx_connection <- function(
-    x,
-    timeout = Inf,
-    ...,
-    verbose = DEBUG) {
-  x <- read_until(x, "Content-Length: \\d+\\b", timeout = timeout)
-  if (is.null(x)) {
-    return(x)
-  }
-
-  content_str <- gsub(".*Content-Length: (\\d+)\\s.*", "\\1", x)
-  content_length <- as.numeric(content_str)
-
-  body <- gsub(".*Content-Length: \\d+", "", x)
-  obj <- parse_message_body(body)
-
-  log_msg <- paste0("recieved (", content_length, ")\n", trimws(body))
-  log(verbose, strip_empty_lines(log_msg), "\n")
-
   obj
 }
 
@@ -99,35 +76,6 @@ write_message.default <- function(x, content = list(), verbose = DEBUG, name = N
   log_content <- strip_empty_lines(trimws(sub(".*\n\r", "", content_str)))
   log(verbose, log_header, log_content, "\n")
   writeChar(content_str, x)
-  content
-}
-
-#' @export
-#' @name messages
-write_message.terminal <- function(x, content = list(), verbose = DEBUG) {
-  content_str <- format_message_content(content)
-  log_msg <- paste0(
-    "sent to stdout (", nchar(content_str), ")\n",
-    trimws(content_str)
-  )
-  log(verbose, strip_empty_lines(log_msg), "\n")
-  writeLines(content_str, x)
-  content
-}
-
-#' @export
-#' @name messages
-write_message.processx_connection <- function(
-    x,
-    content = list(),
-    verbose = DEBUG) {
-  content_str <- format_message_content(content)
-  log_msg <- paste0(
-    "sent to socket (", nchar(content_str), ")\n",
-    trimws(content_str)
-  )
-  log(verbose, strip_empty_lines(log_msg), "\n")
-  processx::conn_write(x, content_str)
   content
 }
 

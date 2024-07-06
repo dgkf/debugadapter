@@ -12,8 +12,11 @@ Authors@R:
     )
 Description: What the package does (one paragraph).
 Imports:
-	R6,
-	callr
+    callr,
+	cli,
+    R6,
+	tools,
+	utils
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

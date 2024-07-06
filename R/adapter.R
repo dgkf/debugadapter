@@ -18,17 +18,22 @@ start_adapter <- function(...) {
 #' @name start_adapter
 start_adapter_in_background <- function(...) {
   callr::r_bg(
-    function(..., log) {
+    function(..., parent_options) {
       options(
         warn = 2L,
-        debugadapter.log_prefix = paste0("[BG<pid", Sys.getpid(), ">]"),
+        debugadapter.log_prefix =
+          paste0(cli::style_dim(cli::col_grey("(pid:", Sys.getpid(), ")"))),
         debugadapter.log = log
       )
+      options(parent_options)
       debugadapter::start_adapter(...)
     },
     args = list(
       ...,
-      log = getOption("debugadapter.log")
+      parent_options = list(
+        debugadapter.log = getOption("debugadapter.log"),
+        cli.num_colors = cli::num_ansi_colors()
+      )
     )
   )
 }
@@ -95,6 +100,21 @@ adapter <- R6::R6Class(
       }
     },
 
+    #' Propagate a message back out to all attached clients
+    #'
+    #' @param debuggee `logical` indicating whether the debuggee client should
+    #'   be included.
+    #'
+    #' @return Used for side effects of message passing
+    #'
+    relay_to_clients = function(content, debuggee = FALSE) {
+      clients <- self$clients
+      if (!debuggee && !is.null(names(clients))) {
+        clients <- clients[names(clients) != "debuggee"]
+      }
+      for (client in clients) write_message(client, content)
+    },
+
     #' Scan port for attempts to form new connections
     open_new_connections = function() {
       while (is_conn_waiting <- socketSelect(list(self$server), timeout = 0)) {
@@ -146,24 +166,44 @@ adapter <- R6::R6Class(
     },
 
     #' Create breakpoints, store and reply in pending state
-    set_pending_breakpoints = function(msg) {
+    #'
+    #' @param content the `setBreakpoints` message content
+    #'
+    set_pending_breakpoints = function(content) {
       # Convert message arguments to pending breakpoints
-      args <- msg$arguments
+      args <- content$arguments
       size_hint_obj <- args$breakpoints %||% args$lines
       ids <- self$next_breakpoint_id(length(size_hint_obj))
       breakpoints <- as_pending_breakpoints(args, ids)
 
       # update local index of breakpoints
       self$breakpoints[as.character(ids)] <- breakpoints
-      msg$arguments$breakpoints <- breakpoints
+      content$arguments$breakpoints <- breakpoints
 
       # send to debuggee for verification
       if (!is.null(self$debuggee)) {
-        write_message(self$debuggee, msg)
+        write_message(self$debuggee, content)
       }
+    },
+
+    #' Set breakpoints, most often after first creating them as 'pending' and
+    #' then passing them off to the debuggee for verification.
+    #'
+    #' @param content the `setBreakpoints` out-of-spec response content from
+    #'   the debuggee, which is expected to be a viable response to the
+    #'   original `setBreakpoint` request that can be immediately relayed
+    #'   to clients.
+    #' @return used for side-effects of updating state and relaying message
+    #'
+    set_breakpoints = function(content) {
+      # update our local adapter breakpoints to reflect breakpoints in debuggee
+      ids <- vnapply(content$breakpoints, `[[`, "id")
+      self$breakpoints[as.character(ids)] <- content$breakpoints
+
+      # relay response back out to clients
+      self$relay_to_clients(content)
     }
   ),
-
   active = list(
     #' Retrieve debuggee client
     debuggee = function() self$clients[["debuggee"]]

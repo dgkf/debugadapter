@@ -4,6 +4,7 @@ DEBUG <- 2
 INFO <- 3
 # nolint end
 
+#' @import cli
 log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
   dots <- list(...)
   for (i in seq_along(dots)) {
@@ -18,17 +19,20 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
 
   log_prefix <- getOption("debugadapter.log_prefix", "")
   level_msg <- switch(level,
-    "1" = "[TRACE] ",
-    "2" = "[DEBUG] ",
-    "3" = "[INFO] ",
+    "1" = cli::col_magenta("[TRACE] "),
+    "2" = cli::col_yellow("[DEBUG] "),
+    "3" = cli::col_blue("[INFO] "),
     ""
   )
 
+  body <- paste0(dots, collapse = "")
+  header <- sub("\n.*", "", body)
+  body <- substring(body, nchar(header) + 1)
+
   if (verbose <= level) {
     message(paste0(
-      log_prefix,
-      level_msg,
-      paste0(dots, collapse = "")
+      cli::style_bold(log_prefix, level_msg, header),
+      cli::style_dim(trimws(body, which = "right"))
     ))
   }
 }

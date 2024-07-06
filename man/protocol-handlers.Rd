@@ -21,6 +21,7 @@
 \alias{handle.request.configurationDone}
 \alias{handle.reverse_request}
 \alias{handle.response}
+\alias{handle.response.setBreakpoints}
 \title{Dispatch for protocol messaging}
 \usage{
 r_handle(x, ..., debuggee)
@@ -59,7 +60,9 @@ handle.request(x, ...)
 
 \method{handle}{reverse_request}(x, ..., adapter, client)
 
-\method{handle}{response}(x, ...)
+handle.response(x, ...)
+
+\method{handle}{response.setBreakpoints}(x, ..., adapter, client)
 }
 \description{
 Dispatch for protocol messaging
@@ -93,7 +96,11 @@ session and shut itself down.
 \item \code{handle(reverse_request)}: Issue reverse request and await response.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Reverse_Requests_RunInTerminal})
 
-\item \code{handle(response)}: Recieve reverse request response.
-(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Reverse_Requests_RunInTerminal})
+\item \code{handle.response()}: Handle responses
+
+\item \code{handle(response.setBreakpoints)}: \strong{out-of-spec} Receive \code{setBreakpoint} response, as from the debuggee,
+after it verified breakpoints. Typically the client receives \code{setBreakpoint}
+responses, not the adapter, so here we use this response to communicate
+the verification of breakpoints from the debuggee to the adapter.
 
 }}

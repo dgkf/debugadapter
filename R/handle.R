@@ -100,16 +100,16 @@ handle.reverse_request <- function(x, ..., adapter, client) {
 
 
 #' @describeIn protocol-handlers
-#' Recieve reverse request response.
-#' `r spec("#Reverse_Requests_RunInTerminal")`
+#' Handle responses
 handle.response <- function(x, ...) {
-  # read response body as primary result
-  resp <- read_message(x$con)
-  obj <- resp$body
+  UseMethod("handle.response")
+}
 
-  # add additional fields as attributes
-  resp$body <- NULL
-  attributes(obj) <- resp
-
-  obj
+#' @describeIn protocol-handlers
+#' **out-of-spec** Receive `setBreakpoint` response, as from the debuggee,
+#' after it verified breakpoints. Typically the client receives `setBreakpoint`
+#' responses, not the adapter, so here we use this response to communicate
+#' the verification of breakpoints from the debuggee to the adapter.
+handle.response.setBreakpoints <- function(x, ..., adapter, client) {
+  adapter$set_breakpoints(x)
 }
