@@ -3,7 +3,6 @@
 #' @param x A connection (or similar) to read from or write to
 #' @param content The message contents to write
 #' @param timeout A maximum time in seconds to wait to receive a new message
-#' @param verbose A logical value or integer log level flag
 #' @param name An optional string to use for the connection for debug logs
 #'
 #' @name messages
@@ -22,7 +21,7 @@ read_message.client <- function(x, ...) {
 
 #' @export
 #' @name messages
-read_message.default <- function(x, ..., verbose = DEBUG, name = NULL) {
+read_message.default <- function(x, ..., name = NULL) {
   # read until the next "Content-Length" header
   # (flushing any leading whitespace)
   scan(x, what = character(), n = 1, sep = "C", quiet = TRUE, skipNul = TRUE)
@@ -49,7 +48,7 @@ read_message.default <- function(x, ..., verbose = DEBUG, name = NULL) {
     if (!is.null(name)) paste0(" from ", name), "\n"
   )
 
-  log(verbose, log_header, strip_empty_lines(trimws(body)), "\n")
+  DEBUG(log_header, trimws(strip_empty_lines(body)))
   obj
 }
 
@@ -66,7 +65,7 @@ write_message.client <- function(x, content = list(), ...) {
 
 #' @export
 #' @name messages
-write_message.default <- function(x, content = list(), verbose = DEBUG, name = NULL) {
+write_message.default <- function(x, content = list(), name = NULL) {
   content_str <- format_message_content(content)
   log_header <- paste0(
     "sent (", nchar(content_str), ")",
@@ -74,7 +73,7 @@ write_message.default <- function(x, content = list(), verbose = DEBUG, name = N
   )
 
   log_content <- strip_empty_lines(trimws(sub(".*\n\r", "", content_str)))
-  log(verbose, log_header, log_content, "\n")
+  DEBUG(log_header, log_content)
   writeChar(content_str, x)
   content
 }

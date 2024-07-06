@@ -9,18 +9,22 @@
 \alias{r_handle.response.default}
 \alias{r_handle.request.default}
 \alias{r_handle.request.setBreakpoints}
+\alias{r_handle.request.stackTrace}
 \alias{handle}
 \alias{handle.NULL}
 \alias{handle.request}
+\alias{handle.response}
+\alias{handle.event}
 \alias{handle.request.initialize}
 \alias{handle.request.attach}
+\alias{handle.request.configurationDone}
+\alias{handle.request.disconnect}
+\alias{handle.request.setBreakpoints}
 \alias{handle.request.setExceptionBreakpoints}
 \alias{handle.request.setFunctionBreakpoints}
-\alias{handle.request.setBreakpoints}
-\alias{handle.request.disconnect}
-\alias{handle.request.configurationDone}
+\alias{handle.request.stackTrace}
+\alias{handle.request.threads}
 \alias{handle.reverse_request}
-\alias{handle.response}
 \alias{handle.response.setBreakpoints}
 \title{Dispatch for protocol messaging}
 \usage{
@@ -38,42 +42,67 @@ r_handle.response(x, ..., debuggee)
 
 \method{r_handle}{request.setBreakpoints}(x, ..., debuggee)
 
+\method{r_handle}{request.stackTrace}(x, ..., debuggee)
+
 handle(x, ...)
 
 \method{handle}{`NULL`}(x, ...)
 
 handle.request(x, ...)
 
+handle.response(x, ...)
+
+\method{handle}{event}(x, ..., adapter, client)
+
 \method{handle}{request.initialize}(x, ..., adapter, client)
 
 \method{handle}{request.attach}(x, ..., adapter, client)
+
+\method{handle}{request.configurationDone}(x, ..., adapter, client)
+
+\method{handle}{request.disconnect}(x, ..., adapter, client)
+
+\method{handle}{request.setBreakpoints}(x, ..., adapter, client)
 
 \method{handle}{request.setExceptionBreakpoints}(x, ..., adapter, client)
 
 \method{handle}{request.setFunctionBreakpoints}(x, ..., adapter, client)
 
-\method{handle}{request.setBreakpoints}(x, ..., adapter, client)
+\method{handle}{request.stackTrace}(x, ..., adapter, client)
 
-\method{handle}{request.disconnect}(x, ..., adapter, client)
-
-\method{handle}{request.configurationDone}(x, ..., adapter, client)
+\method{handle}{request.threads}(x, ..., adapter, client)
 
 \method{handle}{reverse_request}(x, ..., adapter, client)
 
-handle.response(x, ...)
-
 \method{handle}{response.setBreakpoints}(x, ..., adapter, client)
+
+\method{handle}{event}(x, ..., adapter, client)
 }
 \description{
 Dispatch for protocol messaging
 }
 \section{Functions}{
 \itemize{
+\item \code{handle.response()}: Handle responses
+
+\item \code{handle(event)}: Handle responses
+
 \item \code{handle(request.initialize)}: Initiailze the debug adapter and store client information for this session.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Initialize})
 
 \item \code{handle(request.attach)}: Attach a client's connection as the active session
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Attach})
+
+\item \code{handle(request.configurationDone)}: Handle configuration done requests.
+(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_ConfigurationDone})
+
+\item \code{handle(request.disconnect)}: Handle disconnect request to disconnect from the debuggee, end the debug
+session and shut itself down.
+(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Disconnect})
+
+\item \code{handle(request.setBreakpoints)}: Update internal adapter breakpoints listing and relay breakpoints to debug
+session.
+(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_SetBreakpoints})
 
 \item \code{handle(request.setExceptionBreakpoints)}: Update internal adapter breakpoints listing and relay breakpoints to debug
 session.
@@ -82,25 +111,20 @@ session.
 \item \code{handle(request.setFunctionBreakpoints)}: Set function breakpoints
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_setFunctionBreakpoints})
 
-\item \code{handle(request.setBreakpoints)}: Update internal adapter breakpoints listing and relay breakpoints to debug
-session.
-(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_SetBreakpoints})
+\item \code{handle(request.stackTrace)}: Handle configuration done requests.
+(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_ConfigurationDone})
 
-\item \code{handle(request.disconnect)}: Handle disconnect request to disconnect from the debuggee, end the debug
-session and shut itself down.
-(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Disconnect})
-
-\item \code{handle(request.configurationDone)}: Handle configuration done requests.
+\item \code{handle(request.threads)}: Handle configuration done requests.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_ConfigurationDone})
 
 \item \code{handle(reverse_request)}: Issue reverse request and await response.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Reverse_Requests_RunInTerminal})
 
-\item \code{handle.response()}: Handle responses
-
 \item \code{handle(response.setBreakpoints)}: \strong{out-of-spec} Receive \code{setBreakpoint} response, as from the debuggee,
 after it verified breakpoints. Typically the client receives \code{setBreakpoint}
 responses, not the adapter, so here we use this response to communicate
 the verification of breakpoints from the debuggee to the adapter.
+
+\item \code{handle(event)}: All events from the debuggee are relayed to clients
 
 }}

@@ -30,7 +30,7 @@ client <- R6::R6Class(
       ), 1)
 
       if (length(n) < 1 || !n %in% names(self$capabilities)) {
-        log(DEBUG, sprintf("Cannot find capability '%s'", capability))
+        DEUBG(sprintf("Cannot find capability '%s'", capability))
         return(FALSE)
       }
 

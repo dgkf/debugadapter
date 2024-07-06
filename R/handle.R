@@ -17,6 +17,18 @@ handle.request <- function(x, ...) {
   UseMethod("handle.request")
 }
 
+#' @describeIn protocol-handlers
+#' Handle responses
+handle.response <- function(x, ...) {
+  UseMethod("handle.response")
+}
+
+#' @describeIn protocol-handlers
+#' Handle responses
+handle.event <- function(x, ...) {
+  UseMethod("handle.event")
+}
+
 #' @export
 #' @describeIn protocol-handlers
 #' Initiailze the debug adapter and store client information for this session.
@@ -36,6 +48,31 @@ handle.request.attach <- function(x, ..., adapter, client) {
   if (identical(x$arguments$clientName, "r-session"))
     adapter$set_debuggee(client)
   write_message(client, response(x))
+}
+
+#' @export
+#' @describeIn protocol-handlers
+#' Handle configuration done requests.
+#' `r spec("#Requests_ConfigurationDone")`
+handle.request.configurationDone <- function(x, ..., adapter, client) {
+  write_message(client)
+}
+
+#' @export
+#' @describeIn protocol-handlers
+#' Handle disconnect request to disconnect from the debuggee, end the debug
+#' session and shut itself down.
+#' `r spec("#Requests_Disconnect")`
+handle.request.disconnect <- function(x, ..., adapter, client) {
+}
+
+#' @export
+#' @describeIn protocol-handlers
+#' Update internal adapter breakpoints listing and relay breakpoints to debug
+#' session.
+#' `r spec("#Requests_SetBreakpoints")`
+handle.request.setBreakpoints <- function(x, ..., adapter, client) {
+  adapter$set_pending_breakpoints(x)
 }
 
 #' @export
@@ -64,30 +101,26 @@ handle.request.setFunctionBreakpoints <- function(x, ..., adapter, client) {
 
 #' @export
 #' @describeIn protocol-handlers
-#' Update internal adapter breakpoints listing and relay breakpoints to debug
-#' session.
-#' `r spec("#Requests_SetBreakpoints")`
-handle.request.setBreakpoints <- function(x, ..., adapter, client) {
-  adapter$set_pending_breakpoints(x)
-}
+#' Handle configuration done requests.
+#' `r spec("#Requests_ConfigurationDone")`
+handle.request.stackTrace <- function(x, ..., adapter, client) {
+  # TODO: this could be passed to the adapter and stored alongside the
+  # initial breakpoint request, to avoid repeatedly communicating with 
+  # debuggee
 
-#' @export
-#' @describeIn protocol-handlers
-#' Handle disconnect request to disconnect from the debuggee, end the debug
-#' session and shut itself down.
-#' `r spec("#Requests_Disconnect")`
-handle.request.disconnect <- function(x, ..., adapter, client) {
+  # relay to debugee
+  write_message(adapter$debugge, x)
 }
 
 #' @export
 #' @describeIn protocol-handlers
 #' Handle configuration done requests.
 #' `r spec("#Requests_ConfigurationDone")`
-handle.request.configurationDone <- function(x, ..., adapter, client) {
-  write_message(client)
+handle.request.threads <- function(x, ..., adapter, client) {
+  # return only a single thread - no need to query debuggee
+  thread <- list(id = 0, name = "R Session")
+  write_message(client, response(x, list(threads = list(thread))))
 }
-
-
 
 #' @describeIn protocol-handlers
 #' Issue reverse request and await response.
@@ -97,14 +130,6 @@ handle.reverse_request <- function(x, ..., adapter, client) {
   handle(adapter)
 }
 
-
-
-#' @describeIn protocol-handlers
-#' Handle responses
-handle.response <- function(x, ...) {
-  UseMethod("handle.response")
-}
-
 #' @describeIn protocol-handlers
 #' **out-of-spec** Receive `setBreakpoint` response, as from the debuggee,
 #' after it verified breakpoints. Typically the client receives `setBreakpoint`
@@ -112,4 +137,10 @@ handle.response <- function(x, ...) {
 #' the verification of breakpoints from the debuggee to the adapter.
 handle.response.setBreakpoints <- function(x, ..., adapter, client) {
   adapter$set_breakpoints(x)
+}
+
+#' @describeIn protocol-handlers
+#' All events from the debuggee are relayed to clients
+handle.event <- function(x, ..., adapter, client) {
+  adapter$relay_to_clients(x)
 }

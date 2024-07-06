@@ -10,6 +10,8 @@ start_adapter(...)
 start_adapter_in_background(...)
 }
 \arguments{
+\item{...}{Arguments used to initialize an \link{adapter}}
+
 \item{port}{The port to listen on for new connections}
 
 \item{poll}{The polling frequency in seconds}

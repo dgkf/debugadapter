@@ -16,13 +16,13 @@ read_message(x, ...)
 
 \method{read_message}{client}(x, ...)
 
-\method{read_message}{default}(x, ..., verbose = DEBUG, name = NULL)
+\method{read_message}{default}(x, ..., name = NULL)
 
 write_message(x, content = list(), ...)
 
 \method{write_message}{client}(x, content = list(), ...)
 
-\method{write_message}{default}(x, content = list(), verbose = DEBUG, name = NULL)
+\method{write_message}{default}(x, content = list(), name = NULL)
 
 parse_message_body(content)
 
@@ -30,8 +30,6 @@ format_message_content(content)
 }
 \arguments{
 \item{x}{A connection (or similar) to read from or write to}
-
-\item{verbose}{A logical value or integer log level flag}
 
 \item{name}{An optional string to use for the connection for debug logs}
 

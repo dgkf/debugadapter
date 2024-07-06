@@ -8,6 +8,7 @@
 #' @param port The port to listen on for new connections
 #' @param poll The polling frequency in seconds
 #' @param timeout A timeout time in seconds to apply to all connections
+#' @param ... Arguments used to initialize an [adapter]
 #'
 #' @name start_adapter
 #' @export
@@ -38,7 +39,15 @@ start_adapter_in_background <- function(...) {
   )
 }
 
-adapter <- R6::R6Class(
+#' Adapter
+#'
+#' The debug adapter server, which manages connections to an arbitrary number
+#' of clients which may interact with the debug state. The adapter expects one
+#' client to be a priveleged "debuggee", which will provide information about
+#' the debug state. This will be an active R session, which is expected to
+#' have access to the symbols requested for debugging.
+#'
+adapter <- R6::R6Class(  # nolint
   "adapter",
   public = list(
     #' @field server A socket server, listening for connections on 'port'
@@ -69,8 +78,15 @@ adapter <- R6::R6Class(
     #' breakpoint
     breakpoint_id = 0,
 
+    #' @param port `integer` The port on which to host a tcp server
+    #' @param poll `numeric` The frequency at which connections should be
+    #'   polled for new messages
+    #' @param timeout `numeric` An inactivity time in seconds, after which
+    #'   connections should be closed.
+    #' @param ... Additional arguments unused
+    #' @return self
     initialize = function(port = 18721, poll = 0.1, timeout = 60, ...) {
-      log(DEBUG,
+      DEBUG(
         "Starting tcp server at localhost:", port,
         ", listening for DAP client ..."
       )
@@ -81,7 +97,8 @@ adapter <- R6::R6Class(
       self
     },
 
-    #' The core loop of the adapter, handling connections and message passing.
+    #' The core loop of the adapter, handling connections and message passing
+    #' @return will not return unless an error is encountered
     run = function() {
       repeat {
         self$open_new_connections()
@@ -92,6 +109,8 @@ adapter <- R6::R6Class(
     },
 
     #' Iterate through connections and handle requests
+    #' @return used for side effect of listening to and handling messages from
+    #'   clients.
     process_requests = function() {
       for (client in self$clients) {
         while (!is.null(msg <- read_message(client, timeout = Inf))) {
@@ -102,9 +121,9 @@ adapter <- R6::R6Class(
 
     #' Propagate a message back out to all attached clients
     #'
+    #' @param content `list` The message contents to relay
     #' @param debuggee `logical` indicating whether the debuggee client should
     #'   be included.
-    #'
     #' @return Used for side effects of message passing
     #'
     relay_to_clients = function(content, debuggee = FALSE) {
@@ -116,6 +135,7 @@ adapter <- R6::R6Class(
     },
 
     #' Scan port for attempts to form new connections
+    #' @return used for side effect of opening new connections
     open_new_connections = function() {
       while (is_conn_waiting <- socketSelect(list(self$server), timeout = 0)) {
         # catch errors, in exceedingly rare case where connection stopped
@@ -124,7 +144,7 @@ adapter <- R6::R6Class(
           conn <- suppressWarnings(socketAccept(self$server, timeout = 1))
           socketTimeout(conn, self$timeout)
           n <- length(self$clients) + 1L
-          log(DEBUG, "new connection (", n, ") accepted on port ", self$port)
+          DEBUG("new connection (", n, ") accepted on port ", self$port)
           self$clients[[n]] <- client$new(conn)
         }, error = function(e) {
           message(conditionMessage(e))
@@ -133,6 +153,7 @@ adapter <- R6::R6Class(
     },
 
     #' Close connections that have outlived their timeout
+    #' @return used for side effect of closing stale connections
     close_timedout_connections = function() {
       t <- Sys.time()
       to_close <- vlapply(self$clients, function(client) {
@@ -145,14 +166,18 @@ adapter <- R6::R6Class(
 
       for (i in which(to_close)) {
         close(self$client[[i]]$connection)
-        log(DEBUG, "connection ", i, " closed on port ", self$port)
+        DEBUG("connection ", i, " closed on port ", self$port)
       }
     },
 
     #' Mark a client as a debuggee
+    #'
+    #' @param client A [client] to tag as the debuggee
+    #' @return Used for side effect of mutating names of clients list
+    #'
     set_debuggee = function(client) {
       if (!is.null(self$debuggee)) {
-        log(DEBUG, "debuggee requested, but a debuggee is already attached")
+        DEBUG("debuggee requested, but a debuggee is already attached")
       }
       client_ids <- vnapply(self$clients, function(client) client$id())
       i <- which(client$id() == client_ids)
@@ -160,6 +185,10 @@ adapter <- R6::R6Class(
     },
 
     #' Increment and return new breakpoint ids
+    #'
+    #' @param n A number of new identifiers to create
+    #' @return `integer[n]` A sequence of identifier integers of length `n`
+    #'
     next_breakpoint_id = function(n = 1) {
       self$breakpoint_id <- self$breakpoint_id + n
       self$breakpoint_id - (n - seq_len(n))
@@ -205,7 +234,7 @@ adapter <- R6::R6Class(
     }
   ),
   active = list(
-    #' Retrieve debuggee client
+    #' @field debuggee Retrieve debuggee client
     debuggee = function() self$clients[["debuggee"]]
   )
 )
@@ -283,7 +312,7 @@ supports <- function(x, capability) {
   ), 1)
 
   if (length(n) < 1 || !n %in% names(x$capabilities)) {
-    log(DEBUG, sprintf("Cannot find capability '%s'", capability))
+    DEBUG(sprintf("Cannot find capability '%s'", capability))
     return(FALSE)
   }
 

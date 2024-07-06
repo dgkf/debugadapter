@@ -98,7 +98,15 @@ trace_breakpoint <- function(b) {
     suppressMessages(trace(
       what = location$name,
       signature = location$signature,
-      tracer = quote(browser(skipCalls = 4L)),
+      tracer = bquote({
+        browser(
+          condition = .(list(
+            location = location,
+            breakpoint = b            
+          )),
+          skipCalls = 4L
+        )
+      }),
       where = location$env,
       at = location$at,
       print = FALSE
