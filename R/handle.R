@@ -68,6 +68,19 @@ handle.request.disconnect <- function(x, ..., adapter, client) {
 
 #' @export
 #' @describeIn protocol-handlers
+#' Handle configuration done requests.
+#' `r spec("#Requests_Scopes")`
+handle.request.scopes <- function(x, ..., adapter, client) {
+  # TODO(perf): this could be passed to the adapter and stored alongside the
+  # initial stackFrames request, to avoid repeatedly communicating with 
+  # debuggee
+
+  # relay to debuggee
+  write_message(adapter$debuggee, x)
+}
+
+#' @export
+#' @describeIn protocol-handlers
 #' Update internal adapter breakpoints listing and relay breakpoints to debug
 #' session.
 #' `r spec("#Requests_SetBreakpoints")`
@@ -82,7 +95,7 @@ handle.request.setBreakpoints <- function(x, ..., adapter, client) {
 #' `r spec("#Requests_setExceptionBreakpoints")`
 handle.request.setExceptionBreakpoints <- function(x, ..., adapter, client) {  # nolint
   x$arguments$adapter <- adapter
-  # TODO: set_exception_breakoints
+  # TODO(feat): set_exception_breakoints
   # bps <- do.call(set_exception_breakpoints, x$arguments)
   bps <- list()
   write_message(client, response(x, body = list(breakpoints = bps)))
@@ -93,7 +106,7 @@ handle.request.setExceptionBreakpoints <- function(x, ..., adapter, client) {  #
 #' Set function breakpoints
 #' `r spec("#Requests_setFunctionBreakpoints")`
 handle.request.setFunctionBreakpoints <- function(x, ..., adapter, client) {
-  # TODO: set_function_breakoints
+  # TODO(feat): set_function_breakoints
   # bps <- do.call(set_function_breakpoints, x$arguments)
   bps <- list()
   write_message(client, response(x, body = list(breakpoints = bps)))
@@ -102,24 +115,37 @@ handle.request.setFunctionBreakpoints <- function(x, ..., adapter, client) {
 #' @export
 #' @describeIn protocol-handlers
 #' Handle configuration done requests.
-#' `r spec("#Requests_ConfigurationDone")`
+#' `r spec("#Requests_StackTrace")`
 handle.request.stackTrace <- function(x, ..., adapter, client) {
-  # TODO: this could be passed to the adapter and stored alongside the
+  # TODO(perf): this could be passed to the adapter and stored alongside the
   # initial breakpoint request, to avoid repeatedly communicating with 
   # debuggee
 
-  # relay to debugee
-  write_message(adapter$debugge, x)
+  # relay to debuggee
+  write_message(adapter$debuggee, x)
 }
 
 #' @export
 #' @describeIn protocol-handlers
 #' Handle configuration done requests.
-#' `r spec("#Requests_ConfigurationDone")`
+#' `r spec("#Requests_Threads")`
 handle.request.threads <- function(x, ..., adapter, client) {
   # return only a single thread - no need to query debuggee
   thread <- list(id = 0, name = "R Session")
   write_message(client, response(x, list(threads = list(thread))))
+}
+
+#' @export
+#' @describeIn protocol-handlers
+#' Handle configuration done requests.
+#' `r spec("#Requests_Variables")`
+handle.request.variables <- function(x, ..., adapter, client) {
+  # TODO(perf): this could be passed to the adapter and stored alongside the
+  # initial stackFrames request, to avoid repeatedly communicating with 
+  # debuggee
+
+  # relay to debuggee
+  write_message(adapter$debuggee, x)
 }
 
 #' @describeIn protocol-handlers
@@ -137,6 +163,13 @@ handle.reverse_request <- function(x, ..., adapter, client) {
 #' the verification of breakpoints from the debuggee to the adapter.
 handle.response.setBreakpoints <- function(x, ..., adapter, client) {
   adapter$set_breakpoints(x)
+}
+
+#' @describeIn protocol-handlers
+#' Most responses, issued from the debuggee back to the adapter, can be
+#' relayed verbatim to clients.
+handle.response.default <- function(x, ..., adapter, client) {
+  adapter$relay_to_clients(x)
 }
 
 #' @describeIn protocol-handlers

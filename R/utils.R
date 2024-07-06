@@ -61,6 +61,46 @@ find_package_name <- function(path = ".") {
 }
 
 
+#' Find Source of Object
+#'
+#' When debugging, many objects are modified with injected traces. We don't
+#' care about these because they only exist in our R Session. What we want
+#' is the original object whose source may be opened in a client editor.
+#'
+#' @param expr In most uses, an expression. Dispatch is used to recursively
+#'   discover source objects after evaluation, so after recursing, this might
+#'   be an R object.
+#' @param envir An environment in which to evaluate the expression
+#'
+find_source_object <- function(expr, envir) {
+  UseMethod("find_source_object")  
+}
+
+#' @export
+find_source_object.default <- function(expr, envir) {
+  expr
+}
+
+#' @export
+find_source_object.quote <- function(expr, envir) {
+  find_source_object(tryCatch(
+    eval(expr, envir = frame),
+    error = function(e) NULL
+  ))
+}
+
+#' @export
+find_source_object.functionWithTrace <- function(expr, envir) {
+  find_source_object(attr(expr, "original"))
+}
+
+#' @export
+find_source_object.name <- find_source_object.quote
+
+#' @export
+find_source_object.expression <- find_source_object.quote
+
+
 line_code_span <- function(path, line) {
   text <- scan(
     path,
@@ -125,4 +165,31 @@ strip_empty_lines <- function(x) {
 #' @export
 srcpos <- function() {
   .Call("srcpos")
+}
+
+
+#' Format a variable for return as part of a Variable.value type
+#'
+#' @param x Any R object
+#'
+format_variable <- function(x) {
+  UseMethod("format_variable")  
+}
+
+#' @export
+format_variable.default <- function(x) {
+  out <- deparse(x, nlines = 1, width.cutoff = 40)
+  if (nchar(out) == 40) paste0(out, "...") else out
+}
+
+#' @export
+format_variable.data.frame <- function(x) {
+  paste0("<data.frame ", nrow(x), "x", ncol(x), ">")
+}
+
+#' @export
+format_variable.array <- function(x) {
+  d <- dim(x)  
+  type <- if (length(d) <= 2) "matrix" else "array"
+  paste0("<", type, " ", paste0(d, collapse = "x"), ">")
 }

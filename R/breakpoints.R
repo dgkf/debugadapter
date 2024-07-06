@@ -101,8 +101,9 @@ trace_breakpoint <- function(b) {
       tracer = bquote({
         browser(
           condition = .(list(
+            skipCalls = 4L,
             location = location,
-            breakpoint = b            
+            breakpoint = b
           )),
           skipCalls = 4L
         )
