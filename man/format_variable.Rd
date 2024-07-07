@@ -10,5 +10,6 @@ format_variable(x)
 \item{x}{Any R object}
 }
 \description{
-Format a variable for return as part of a Variable.value type
+When sending variables in scope back to the client, we format them for
+display.
 }

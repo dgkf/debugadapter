@@ -26,8 +26,7 @@ INFO <- function(...) log(loglevel$INFO, ...)  # nolint
 log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
   dots <- list(...)
   for (i in seq_along(dots)) {
-    if (is.character(dots[[i]])) next
-    if (is.numeric(dots[[i]])) next
+    if (is.atomic(dots[[i]])) next
     dots[[i]] <- paste0(
       paste0(capture.output(dots[[i]]), collapse = "\n"),
       "\n"

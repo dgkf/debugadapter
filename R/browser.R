@@ -8,33 +8,43 @@ browser_hook_sync_debugger <- function(debuggee) {
   local({
     #' debug session state
     session <- NULL
-    trace_nframe <- sys.nframe()
+    nframe <- sys.nframe()
 
-    step_hook <- function(hook, condition, envir) {
-      TRACE("[in step hook]")
+    #' helper to create skip conditions
+    skip_browser_step <- function() {
+      cond <- simpleCondition("skipping browser step")
+      class(cond) = c("skip_browser_step", class(cond))
+      signalCondition(cond)
+    }
 
-      # re-enable our browser hook for next browser prompt
-      on.exit(options(browser.hook = hook, add = TRUE))
+    #' The initial hook is used only to skip the first browser prompt
+    #'
+    #' When a `browser()` trace is inserted, it adds an expression just before
+    #' our traced expression. This adds an unnecessary step, so we can just 
+    #' bypass the first browser hit and re-enter on the next one.
+    #'
+    function(hook, condition, envir) {
+      # condition is null for subsequent browser calls, only initialize session
+      # on first run - **requires that a condition is used in browser() call**
+      if (!is.null(condition)) {
+        session <<- condition
+        session$n <<- -(condition[["skip"]] %||% 1)
+      }
 
-      # fetch breakpoint location information, passed via trace condition
-      data <- browserCondition()
-      location <- data$location
-      breakpoint <- data$breakpoint
+      # count our steps (trying to hit 10k/day)
+      session$n <<- session$n + 1
 
+      TRACE("entering browser")
       withRestarts(
         withCallingHandlers(
           tryCatch(
             {
-              # NOTE: at one point I was accidentally throwing an error here,
-              # but it let me skip the initial browser call and go right to
-              # the traced line. Worth exploring in the future to avoid
-              # unnecessary "browser" debug statement before hitting the 
-              # actual breakpoint expression
+              if (session$n <= 0) skip_browser_step()
 
               # update some debuggee state
               # NOTE: this frame count might not be correct as we step into 
               # functions - needs testing
-              n <- trace_nframe - session$skipCalls
+              n <- nframe - session[["skipCalls"]]
               debuggee$calls <- utils::head(sys.calls(), n)
               debuggee$frames <- utils::head(sys.frames(), n)
 
@@ -43,7 +53,7 @@ browser_hook_sync_debugger <- function(debuggee) {
                 reason = "breakpoint",
                 threadId = 0,
                 allThreadsStopped = TRUE,
-                hitBreakpointIds = list(breakpoint$id)
+                hitBreakpointIds = list(session$breakpoint$id)
               )))
 
               # TODO: handle this more gracefully instead of just spamming
@@ -58,64 +68,25 @@ browser_hook_sync_debugger <- function(debuggee) {
                 Sys.sleep(0.01)
               }
 
-              val <- browser("", condition, envir, 0L)
-              return(val)
-            },
-            finally = cat("[exit browser]\n")
-          ),
-          error = function(cnd) {
-            cat("Error:", conditionMessage(cnd), "\n")
-            cat(paste0(
-              seq_along(sys.calls()), ". ",
-              lapply(sys.calls(), deparse, nlines = 1L, width.cutoff = 80),
-              collapse = "\n"
-            ))
-            invokeRestart("browser")
-          }
-        ),
-        browser = function(...) TRACE("[browser calling handler]")
-      )
-    }
-
-    #' The initial hook is used only to skip the first browser prompt
-    #'
-    #' When a `browser()` trace is inserted, it adds an expression just before
-    #' our traced expression. This adds an unnecessary step, so we can just 
-    #' bypass the first browser hit and re-enter on the next one.
-    #'
-    initial_hook <- function(hook, condition, envir) {
-      if (is.null(session)) {
-        session <<- condition
-        session$n <<- 0
-      }
-
-      # update our step counter (10k/day #goals)
-      session$n <<- session$n + 1
-
-      TRACE("[entering initial hook]")
-      withRestarts(
-        withCallingHandlers(
-          tryCatch(
-            {
-              # cat("[initial hook]\n")
-              if (session$n <= 1) stop()
-              # cat("[initial hook, repeat]\n")
+              # ignoreHook avoids the introduction of another browser scope
+              browser("", condition, envir, 0L, ignoreHook = TRUE)
             }, 
-            error = function(e) {
-              if (session$n > 1) cat("Error: ", conditionMessage(e), "\n")
+            skip_browser_step = function(cond) {
+              TRACE("skipping browser step ", session$n)
               invokeRestart("browser")
+            },
+            error = function(e) {
+              cat("Error: ", conditionMessage(e), "\n")
+            },
+            finally = function(...) {
+              TRACE("exiting browser")
             }
           )
         ),
         browser = function(cond, ...) {
-          TRACE("[initial browser restart]")
-          options(browser.hook = step_hook)
-          return(browser("", condition, envir, 0L))
+          TRACE("initial browser restart")
         }
       )
     }
-
-    initial_hook
   })
 }
-

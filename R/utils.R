@@ -170,6 +170,9 @@ srcpos <- function() {
 
 #' Format a variable for return as part of a Variable.value type
 #'
+#' When sending variables in scope back to the client, we format them for
+#' display.
+#'
 #' @param x Any R object
 #'
 format_variable <- function(x) {
