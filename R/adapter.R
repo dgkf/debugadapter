@@ -203,7 +203,7 @@ adapter <- R6::R6Class(  # nolint
       args <- content$arguments
       size_hint_obj <- args$breakpoints %||% args$lines
       ids <- self$next_breakpoint_id(length(size_hint_obj))
-      breakpoints <- as_pending_breakpoints(args, ids)
+      breakpoints <- breakpoints_parse_as_pending(args, ids)
 
       # update local index of breakpoints
       self$breakpoints[as.character(ids)] <- breakpoints

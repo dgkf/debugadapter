@@ -15,8 +15,9 @@ Imports:
     callr,
 	cli,
     R6,
-	tools,
-	utils
+    rlang,
+    tools,
+    utils
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

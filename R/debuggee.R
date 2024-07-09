@@ -5,7 +5,12 @@ debuggee <- R6::R6Class(
     #' @field breakpoints currently tracked breakpoints
     breakpoints = list(),
 
-    #' @field calls During a debugging state, the calls in the debugging 
+    #' @field traces mapping of environment to debug trace information,
+    #'   specifying line number and breakpoint id, used for determining
+    #'   any breakpoints to stop at for actively debugged functions.
+    traces = list(),
+
+    #' @field calls During a debugging state, the calls in the debugging
     #'   call stack.
     calls = list(),
 
@@ -20,6 +25,34 @@ debuggee <- R6::R6Class(
       # the 'client' we're connected to is the adapter
       self$arguments <- list(clientName = "adapter")
       super$initialize(...)
+    },
+
+    set_breakpoints = function(breakpoints) {
+      locations <- lapply(breakpoints, breakpoint_locations)
+      breakpoints <- mfapply(breakpoint_verify, breakpoints, locations)
+      ids <- as.character(vnapply(breakpoints, `[[`, "id"))
+      self$breakpoints[ids] <- breakpoints
+
+      # NOTE: this can probably be cleaned up quite a bit... making a lot of
+      # assumptions of the data structure here that probably can be better
+      # handled by helpers or classes
+      for (idx in seq_along(ids)) {
+        id <- idx[[idx]]
+        self$breakpoints[[id]] <- locations[[idx]]
+      }
+
+      # store trace locations, to be accessed when entering a debugger to decide
+      # when to break.
+      locations <- unlist(locations, recursive = FALSE)
+      obj_addrs <- lapply(locations, function(loc) {
+        rlang::obj_address(get0(loc$name, loc$env, inherits = FALSE))
+      })
+
+      locations_by_addr <- split(locations, obj_addrs)
+      self$traces[names(locations_by_addr)] <- locations_by_addr
+      for (locations in locations_by_addr) location_trace(locations[[1]])
+
+      breakpoints
     },
 
     get_stack_frames = function() {
@@ -63,7 +96,7 @@ stack_frames <- function(calls, frames) {
         endLine = span[[3]],
         endColumn = span[[4]],
         name = deparse(call[[1]])[[1]]
-        # moduleId = package name if possible
+        # TODO(protocol): moduleId = package name if possible
       )
     },
     seq_along(calls),
@@ -147,9 +180,8 @@ r_handle.request.scopes <- function(x, ..., debuggee) {
 r_handle.request.setBreakpoints <- function(x, ..., debuggee) {
   # NOTE: when handled by a debuggee, we can assume the adapter has already
   # preprocessed the setBreakpoints request into pending breakpoints
-  bps <- lapply(x$arguments$breakpoints, verify_breakpoint)
-  trace_breakpoints(bps)
-  write_message(debuggee, response(x, list(breakpoints = bps)))
+  breakpoints <- debuggee$set_breakpoints(x$arguments$breakpoints)
+  write_message(debuggee, response(x, list(breakpoints = breakpoints)))
 }
 
 #' @export
