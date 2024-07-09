@@ -20,7 +20,8 @@ breakpoint(
   endLine,
   endColumn,
   instructionReference,
-  offset
+  offset,
+  reason
 )
 
 checksum(algorithm, checksum)

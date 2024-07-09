@@ -3,42 +3,39 @@
 \name{messages}
 \alias{messages}
 \alias{read_message}
+\alias{read_message.client}
 \alias{read_message.default}
-\alias{read_message.processx_connection}
 \alias{write_message}
+\alias{write_message.client}
 \alias{write_message.default}
-\alias{write_message.terminal}
-\alias{write_message.processx_connection}
 \alias{parse_message_body}
 \alias{format_message_content}
 \title{Protocol Message Reading and Parsing}
 \usage{
-read_message(con, ...)
+read_message(x, ...)
 
-\method{read_message}{default}(con, ..., verbose = DEBUG)
+\method{read_message}{client}(x, ...)
 
-\method{read_message}{processx_connection}(con, timeout = Inf, ..., verbose = DEBUG)
+\method{read_message}{default}(x, ..., name = NULL)
 
-write_message(con, content = list(), ...)
+write_message(x, content = list(), ...)
 
-\method{write_message}{default}(con, content = list(), verbose = DEBUG)
+\method{write_message}{client}(x, content = list(), ...)
 
-\method{write_message}{terminal}(con, content = list(), verbose = DEBUG)
-
-\method{write_message}{processx_connection}(con, content = list(), verbose = DEBUG)
+\method{write_message}{default}(x, content = list(), name = NULL)
 
 parse_message_body(content)
 
 format_message_content(content)
 }
 \arguments{
-\item{con}{A connection to read from or write to}
+\item{x}{A connection (or similar) to read from or write to}
 
-\item{verbose}{A logical value or integer log level flag}
-
-\item{timeout}{A maximum time in seconds to wait to receive a new message}
+\item{name}{An optional string to use for the connection for debug logs}
 
 \item{content}{The message contents to write}
+
+\item{timeout}{A maximum time in seconds to wait to receive a new message}
 }
 \description{
 Protocol Message Reading and Parsing

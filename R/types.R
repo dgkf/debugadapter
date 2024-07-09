@@ -55,7 +55,8 @@ breakpoint <- dap_type("breakpoint",
   "endLine?" = is.number,
   "endColumn?" = is.number,
   "instructionReference?" = is.string,
-  "offset?" = is.number
+  "offset?" = is.number,
+  "reason?" = is.string
 )
 
 #' @describeIn dap_types

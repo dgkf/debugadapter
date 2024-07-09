@@ -1,111 +1,80 @@
 #' Protocol Message Reading and Parsing
 #'
-#' @param con A connection to read from or write to
+#' @param x A connection (or similar) to read from or write to
 #' @param content The message contents to write
 #' @param timeout A maximum time in seconds to wait to receive a new message
-#' @param verbose A logical value or integer log level flag
+#' @param name An optional string to use for the connection for debug logs
 #'
 #' @name messages
 NULL
 
 #' @name messages
-read_message <- function(con, ...) {
+read_message <- function(x, ...) {
   UseMethod("read_message")
 }
 
 #' @export
 #' @name messages
-read_message.default <- function(con, ..., verbose = DEBUG) {
+read_message.client <- function(x, ...) {
+  read_message(x$connection, ..., name = x$name())
+}
+
+#' @export
+#' @name messages
+read_message.default <- function(x, ..., name = NULL) {
   # read until the next "Content-Length" header
   # (flushing any leading whitespace)
-  scan(con, what = character(), n = 1, sep = "C", quiet = TRUE, skipNul = TRUE)
+  scan(x, what = character(), n = 1, sep = "C", quiet = TRUE, skipNul = TRUE)
 
   # read in content length header, and stream in json body
   header <- scan(
-    con,
+    x,
     what = character(), n = 1, sep = "\n", quiet = TRUE, skipNul = TRUE
   )
   content_length <- as.numeric(sub("^C?ontent-Length: ", "", trimws(header)))
 
   # scan to newline preceeding content body, +2 for leading \r\n
-  body <- readChar(con, nchars = content_length + 2L, useBytes = TRUE)
+  # NOTE: suppressing warning from readChar when used on a socket connection
+  nchars <- content_length + 2L
+  body <- suppressWarnings(readChar(x, nchars = nchars, useBytes = TRUE))
   if (length(body) < 1 || nchar(trimws(body)) < 1) {
     return(NULL)
   }
 
   obj <- parse_message_body(body)
 
-  log_msg <- paste0("recieved (", content_length, ")\n", trimws(body))
-  log(verbose, strip_empty_lines(log_msg), "\n")
+  log_header <- paste0(
+    "received (", content_length, ")",
+    if (!is.null(name)) paste0(" from ", name), "\n"
+  )
 
-  obj
-}
-
-#' @export
-#' @name messages
-read_message.processx_connection <- function(
-    con,
-    timeout = Inf,
-    ...,
-    verbose = DEBUG) {
-  x <- read_until(con, "Content-Length: \\d+\\b", timeout = timeout)
-  if (is.null(x)) {
-    return(x)
-  }
-
-  content_str <- gsub(".*Content-Length: (\\d+)\\s.*", "\\1", x)
-  content_length <- as.numeric(content_str)
-
-  body <- gsub(".*Content-Length: \\d+", "", x)
-  obj <- parse_message_body(body)
-
-  log_msg <- paste0("recieved (", content_length, ")\n", trimws(body))
-  log(verbose, strip_empty_lines(log_msg), "\n")
-
+  DEBUG(log_header, trimws(strip_empty_lines(body)))
   obj
 }
 
 #' @name messages
-write_message <- function(con, content = list(), ...) {
+write_message <- function(x, content = list(), ...) {
   UseMethod("write_message")
 }
 
 #' @export
 #' @name messages
-write_message.default <- function(con, content = list(), verbose = DEBUG) {
-  content_str <- format_message_content(content)
-  log_msg <- paste0("sent (", nchar(content_str), ")\n", trimws(content_str))
-  log(verbose, strip_empty_lines(log_msg), "\n")
-  writeChar(content_str, con)
-  content
+write_message.client <- function(x, content = list(), ...) {
+  write_message(x$connection, content = content, ..., name = x$name())
 }
 
 #' @export
 #' @name messages
-write_message.terminal <- function(con, content = list(), verbose = DEBUG) {
+write_message.default <- function(x, content = list(), name = NULL) {
   content_str <- format_message_content(content)
-  log_msg <- paste0(
-    "sent to stdout (", nchar(content_str), ")\n",
-    trimws(content_str)
+  log_header <- paste0(
+    "sent (", nchar(content_str), ")",
+    if (!is.null(name)) paste0(" to ", name), "\n"
   )
-  log(verbose, strip_empty_lines(log_msg), "\n")
-  writeLines(content_str, con)
-  content
-}
 
-#' @export
-#' @name messages
-write_message.processx_connection <- function(
-    con,
-    content = list(),
-    verbose = DEBUG) {
-  content_str <- format_message_content(content)
-  log_msg <- paste0(
-    "sent to socket (", nchar(content_str), ")\n",
-    trimws(content_str)
-  )
-  log(verbose, strip_empty_lines(log_msg), "\n")
-  processx::conn_write(con, content_str)
+  log_content <- strip_empty_lines(trimws(sub(".*\n\r", "", content_str)))
+  DEBUG(log_header, log_content)
+  writeChar(content_str, x)
   content
 }
 

@@ -4,7 +4,7 @@
 \alias{verify_breakpoint}
 \title{Verify DAP sourceBreakpoint and return a Breakpoint}
 \usage{
-verify_breakpoint(path, line, id = NULL)
+verify_breakpoint(breakpoint)
 }
 \description{
 Verifying a breakpoint provided by the client means searching for the line of
