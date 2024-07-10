@@ -75,14 +75,17 @@ debuggee <- R6::R6Class(
 stack_frames <- function(calls, frames) {
   mfapply(
     function(id, call, frame) {
-      # find source object (which may be different that a traced object)
-      obj <- tryCatch(eval(call[[1]], envir = frame), error = function(e) NULL)
-      what <- find_source_object(obj)
+      src <- getSrcref(call)
+
+      if (is.null(src)) {
+        # find source object (which may be different that a traced object)
+        obj <- tryCatch(eval(call[[1]], envir = frame), error = function(e) NULL)
+        src <- getSrcref(find_source_object(obj))
+      }
 
       # derive some source information 
-      filepath <- getSrcFilename(what, full.names = TRUE)
-      span <- getSrcref(what)
-      if (!is.null(span)) span <- as.numeric(span)
+      filepath <- getSrcFilename(src, full.names = TRUE)
+      span <- as.numeric(src)
 
       # derive a stack frame to send back to the adapter
       list(
@@ -100,8 +103,8 @@ stack_frames <- function(calls, frames) {
       )
     },
     seq_along(calls),
-    calls,
-    frames
+    rev(calls),
+    rev(frames)
   )
 }
 

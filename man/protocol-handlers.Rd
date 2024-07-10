@@ -26,9 +26,9 @@
 \alias{handle.request.setExceptionBreakpoints}
 \alias{handle.request.setFunctionBreakpoints}
 \alias{handle.request.stackTrace}
+\alias{handle.request.startDebugging}
 \alias{handle.request.threads}
 \alias{handle.request.variables}
-\alias{handle.reverse_request}
 \alias{handle.response.setBreakpoints}
 \alias{handle.response.default}
 \title{Dispatch for protocol messaging}
@@ -81,11 +81,11 @@ handle.response(x, ...)
 
 \method{handle}{request.stackTrace}(x, ..., adapter, client)
 
+\method{handle}{request.startDebugging}(x, ..., adapter, client)
+
 \method{handle}{request.threads}(x, ..., adapter, client)
 
 \method{handle}{request.variables}(x, ..., adapter, client)
-
-\method{handle}{reverse_request}(x, ..., adapter, client)
 
 \method{handle}{response.setBreakpoints}(x, ..., adapter, client)
 
@@ -132,14 +132,14 @@ session.
 \item \code{handle(request.stackTrace)}: Handle configuration done requests.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_StackTrace})
 
+\item \code{handle(request.startDebugging)}: Reverse request sent to clients to start debugging
+(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Reverse_Requests_StartDebugging})
+
 \item \code{handle(request.threads)}: Handle configuration done requests.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Threads})
 
 \item \code{handle(request.variables)}: Handle configuration done requests.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Variables})
-
-\item \code{handle(reverse_request)}: Issue reverse request and await response.
-(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Reverse_Requests_RunInTerminal})
 
 \item \code{handle(response.setBreakpoints)}: \strong{out-of-spec} Receive \code{setBreakpoint} response, as from the debuggee,
 after it verified breakpoints. Typically the client receives \code{setBreakpoint}

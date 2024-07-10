@@ -9,14 +9,18 @@ browser_hook_sync_debugger <- function(debuggee) {
     # last object debugged
     addr <- NULL
 
-    # last line within object debugged
+    # last line & column within object debugged
     line <- 0L
+    column <- 0L
 
     # list of breakpoint locations within this object
     locations <- list()
 
     # vector of breakpoint lines within this object
     breakpoints <- integer(0L)
+
+    # flag for when we want to do an individual step, regardless of breakpoint
+    stepping <- FALSE
 
     #' helper to create skip conditions
     skip_browser_step <- function() {
@@ -25,106 +29,137 @@ browser_hook_sync_debugger <- function(debuggee) {
       signalCondition(cond)
     }
 
-    #' reset sinks
-    reset_sinks <- function(n) {
-      while (sink.number() > n) sink()
+    #' helper to manage exit message
+    insert_terminated_callback <- function() {
+      name <- paste0(packageName(), "_browser_top_level_callback")
+      if (!name %in% getTaskCallbackNames()) {
+        addTaskCallback(name = name, function(...) {
+          browser_sink_close()
+          debuggee$calls <- list()
+          debuggee$frames <- list()
+          write_message(debuggee, event("terminated"))
+          FALSE
+        })
+      }
     }
 
     #' The initial hook is used only to skip the first browser prompt
     #'
     #' When a `browser()` trace is inserted, it adds an expression just before
-    #' our traced expression. This adds an unnecessary step, so we can just 
+    #' our traced expression. This adds an unnecessary step, so we can just
     #' bypass the first browser hit and re-enter on the next one.
     #'
     function(hook, condition, envir) {
-      # attempt to suppress default debug output so we can make it prettier
-      nsinks <- sink.number()
-      sink(nullfile())
+      insert_terminated_callback()
 
       call <- sys.call(-1L)
       cur_addr <- rlang::obj_address(eval(call[[1]], envir = parent.env(envir)))
       cur_line <- getSrcref(sys.call())[[1]]
+      cur_column <- getSrcref(sys.call())[[2]]
 
-      # check to see if we've entered into a new scope
+      # check to see if we've entered into a new scope, update relevant
+      # breakpoints
       if (!identical(cur_addr,  addr) || cur_line < line) {
         addr <<- cur_addr
         locations <<- debuggee$traces[[addr]] %||% list()
         breakpoints <<- vnapply(locations, `[[`, "line")
       }
+
       line <<- cur_line
-        
+      column <<- cur_column
       withRestarts(
         withCallingHandlers(
           tryCatch(
             {
-              if (!line %in% breakpoints) skip_browser_step()
+              hit_breakpoint <- line %in% breakpoints
+              if (!stepping && !hit_breakpoint) {
+                skip_browser_step()
+              }
 
-              # # update some debuggee state
-              # # NOTE: this frame count might not be correct as we step into
-              # # functions - needs testing
-              # n <- nframe - (session[["skipCalls"]] %||% 4L)
-              # debuggee$calls <- utils::head(sys.calls(), n)
-              # debuggee$frames <- utils::head(sys.frames(), n)
+              # update some debuggee state
+              # NOTE: this frame count might not be correct as we step into
+              # functions - needs testing
+              debuggee$calls <- sys.calls()
+              debuggee$frames <- sys.frames()
 
-              # # start stopped sequence
-              # write_message(debuggee, event("stopped", list(
-              #   reason = "breakpoint",
-              #   threadId = 0,
-              #   allThreadsStopped = TRUE,
-              #   hitBreakpointIds = list(session$breakpoint$id)
-              # )))
+              # start stopped sequence
+              if (hit_breakpoint) {
+                id <- locations[[which(breakpoints == line)]]$id
+                write_message(debuggee, event("stopped", list(
+                  reason = "breakpoint",
+                  description = "Hit breakpoint",
+                  threadId = 0,
+                  allThreadsStopped = TRUE,
+                  hitBreakpointIds = list(id)
+                )))
+              } else {
+                write_message(debuggee, event("stopped", list(
+                  reason = "step",
+                  description = "Paused on expression",
+                  threadId = 0,
+                  allThreadsStopped = TRUE
+                )))
+              }
 
-              # # TODO: handle this more gracefully instead of just spamming
-              # # connection listening
-              # # handle follow-up requests
-              # start <- Sys.time()  # manually handle timeout for now
-              # while (Sys.time() - start < 0.5) {
-              #   if (!is.null(msg <- read_message(debuggee))) {
-              #     debuggee$handle(msg)
-              #     start <- Sys.time()
-              #   }
-              #   Sys.sleep(0.01)
-              # }
+              # TODO: handle this more gracefully instead of just spamming
+              # connection listening
+              # handle follow-up requests
+              start <- Sys.time()  # manually handle timeout for now
+              while (Sys.time() - start < 0.5) {
+                if (!is.null(msg <- read_message(debuggee))) {
+                  debuggee$handle(msg)
+                  start <- Sys.time()
+                }
+                Sys.sleep(0.01)
+              }
 
-              reset_sinks(nsinks)
               expr <- sys.call()
-              cli::cat_line(cli::style_bold(
-                "Debugging at ",
-                if (!is.null(f <- getSrcFilename(expr))) f,
-                "#", getSrcref(expr)[[1]], 
-                ": ", capture.output(expr)[[1]]
-              ))
+              path <- simple_path(getSrcFilename(expr, full.names = TRUE))
+              cli::cat_line(
+                "debug at ",
+                cli::style_bold(if (!is.null(path)) path),
+                cli::style_dim("#"),
+                cli::style_bold(getSrcref(expr)[[1]]),
+                cli::style_dim(": "),
+                cli::style_dim(capture.output(expr)[[1]])
+              )
 
               repeat {
                 resp <- parse(prompt = cli::col_yellow("‼ "), n = 1)
                 if (is.expression(resp)) resp <- resp[[1]]
-                if (is.symbol(resp)) switch(as.character(resp),
-                  "where" = print(sys.calls()),
-                  "n" = {
-                    sink(nullfile())
-                    skip_browser_step()
-                  },
-                  "c" = break,
+                if (is.symbol(resp)) {
+                  switch(
+                    as.character(resp),
+                    "where" = print(sys.calls()),
+                    "n" = {
+                      stepping <<- TRUE
+                      break
+                    },
+                    "c" = {
+                      stepping <<- FALSE
+                      break
+                    },
+                    print(eval(resp, envir = envir))
+                  )
+                } else {
                   print(eval(resp, envir = envir))
-                ) else {
-                  print(eval(resp, envir = envir))                  
                 }
               }
-            }, 
+            },
             skip_browser_step = function(cond) {
-              # TRACE("skipping browser step ", session$n)
+              TRACE("browser step")
               invokeRestart("browser")
             },
             error = function(e) {
               cat("Error: ", conditionMessage(e), "\n")
             },
             finally = function(...) {
-              TRACE("exiting browser")
+              TRACE("browser exiting")
             }
           )
         ),
         browser = function(cond, ...) {
-          # TRACE("initial browser restart")
+          TRACE("browser restart")
         }
       )
     }
