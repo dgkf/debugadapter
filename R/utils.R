@@ -8,24 +8,25 @@
 #'
 #' Simple wrappers around `vapply` for common data types
 #'
-#' @rdname vapplys
+#' @name applys
 #' @inheritParams base::vapply
 #' @keywords internal
-vlapply <- function(..., FUN.VALUE = logical(1L)) {
+vlapply <- function(..., FUN.VALUE = logical(1L)) {  # nolint
   vapply(..., FUN.VALUE = FUN.VALUE)
 }
 
-#' @rdname vapplys
-vcapply <- function(..., FUN.VALUE = character(1L)) {
+#' @name applys
+vcapply <- function(..., FUN.VALUE = character(1L)) {  # nolint
   vapply(..., FUN.VALUE = FUN.VALUE)
 }
 
-#' @rdname vapplys
-vnapply <- function(..., FUN.VALUE = numeric(1L)) {
+#' @name applys
+vnapply <- function(..., FUN.VALUE = numeric(1L)) {  # nolint
   vapply(..., FUN.VALUE = FUN.VALUE)
 }
 
-mfapply <- function(..., SIMPLIFY = FALSE) {
+#' @name applys
+mfapply <- function(..., SIMPLIFY = FALSE) {  # nolint
   mapply(..., SIMPLIFY = SIMPLIFY)
 }
 
@@ -58,6 +59,16 @@ find_package_name <- function(path = ".") {
     return(NULL)
   }
   read.dcf(file.path(root, "DESCRIPTION"), fields = "Package")[[1]]
+}
+
+simple_path <- function(path) {
+  if (startsWith(path, p <- getwd())) {
+    paste0(".", substring(path, nchar(p) + 1))
+  } else if (startsWith(path, p <- normalizePath("~"))) {
+    paste0("~", substring(path, nchar(p) + 1))
+  } else {
+    path
+  }
 }
 
 
@@ -196,3 +207,45 @@ format_variable.array <- function(x) {
   type <- if (length(d) <= 2) "matrix" else "array"
   paste0("<", type, " ", paste0(d, collapse = "x"), ">")
 }
+
+
+#' Collection of utilities for managing redirection of default debugger output
+dapsink <- local({
+  index <- NA
+
+  path <- function() {
+    f <- file.path(tempdir(), "debugadapter", "stdout.log")
+    if (!dir.exists(d <- dirname(f))) dir.create(d, recursive = TRUE)
+    f
+  }
+
+  conn <- function() {
+    conns <- showConnections(all = TRUE)[, "description"]
+    id <- names(cons)[grepl(browser_sink_path(), conns, fixed = TRUE)]
+    if (length(id) > 0) {
+      getConnection(id)
+    } else {
+      f <- path()
+      file.create(f)
+      file(f, open = "w")
+    }
+  }
+
+  #' @param set expects either "open" (to redirect stdout) or "close"
+  redirect <- function(type = "output") {
+    if (!is.na(index)) return()
+    sink(conn(), type = type)
+    index <<- sink.number()
+  }
+
+  close <- function() {
+    cn <- conn()
+    if (isOpen(cn)) close(cn)
+  }
+
+  release <- function(type = "output") {
+    sink(file = conn(), type = type)
+  }
+
+  environment()
+})

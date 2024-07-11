@@ -50,9 +50,10 @@ run_background_connection <- function(port = 18721, ...) {
   DEBUG("Starting background tcp server, awaiting DAP client ...")
   adapter_process <- start_adapter_in_background(port = port, ...)
   debuggee <- attach_runtime(port = port, timeout = 5)
+  prompt <- debug_prompt$new(debuggee)
 
   pid <- adapter_process$get_pid()
-  options(browser.hook = browser_hook_sync_debugger(debuggee))
+  options(browser.hook = prompt$browser_hook)
 
   addTaskCallback(name = "Synchronize Debugger", function(...) {
     status <- if (adapter_process$is_alive()) "alive" else "stopped"

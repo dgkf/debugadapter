@@ -21,10 +21,22 @@ read_message.client <- function(x, ...) {
 
 #' @export
 #' @name messages
-read_message.default <- function(x, ..., name = NULL) {
-  # read until the next "Content-Length" header
-  # (flushing any leading whitespace)
-  scan(x, what = character(), n = 1, sep = "C", quiet = TRUE, skipNul = TRUE)
+read_message.default <- function(
+    x,
+    ...,
+    name = NULL,
+    timeout = NULL,
+    poll = timeout / 100) {
+
+  start <- Sys.time()
+  repeat {
+    # read until the next "Content-Length" header (flushing any leading whitespace)     # nolint
+    hit <- scan(x, what = character(), n = 1, sep = "C", quiet = TRUE, skipNul = TRUE)  # nolint
+
+    if (!is.null(hit)) break
+    if (is.numeric(timeout) && Sys.time() - start > timeout) return(NULL)
+    Sys.sleep(poll)
+  }
 
   # read in content length header, and stream in json body
   header <- scan(

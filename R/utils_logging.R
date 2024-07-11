@@ -1,6 +1,6 @@
 #' @name logging
 loglevel <- local({
-  x <- c("TRACE", "DEBUG", "INFO")
+  x <- c("INFO", "DEBUG", "TRACE")
   x <- factor(x, levels = x)
   names(x) <- x
   lapply(x, identity)
@@ -34,7 +34,7 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
   }
 
   if (is.logical(verbose)) {
-    verbose <- if (verbose) 2 else 4
+    verbose <- if (verbose) 2 else 0
   }
 
   log_prefix <- getOption("debugadapter.log_prefix", "")
@@ -49,7 +49,7 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
   header <- sub("\n.*", "", body)
   body <- substring(body, nchar(header) + 1)
 
-  if (as.numeric(verbose) <= as.numeric(level)) {
+  if (as.numeric(verbose) >= as.numeric(level)) {
     message(paste0(
       cli::style_bold(log_prefix, level_msg, header),
       cli::style_dim(trimws(body, which = "right"))
@@ -61,7 +61,7 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
 #'
 #' @name logging
 echo <- function(level, msg, verbose = getOption("debugadapter.log", FALSE)) {
-  if (nchar(msg) > 0 && as.numeric(verbose) <= as.numeric(level)) {
+  if (nchar(msg) > 0 && as.numeric(verbose) >= as.numeric(level)) {
     message(trimws(msg, which = "right"))
   }
 }

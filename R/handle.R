@@ -17,6 +17,12 @@ handle.request <- function(x, ...) {
   UseMethod("handle.request")
 }
 
+#' @export
+#' @name protocol-handlers
+handle.request.default <- function(x, ...) {
+  INFO("don't know how to handle request command: ", x$command)
+}
+
 #' @describeIn protocol-handlers
 #' Handle responses
 handle.response <- function(x, ...) {
@@ -55,7 +61,7 @@ handle.request.attach <- function(x, ..., adapter, client) {
 #' Handle configuration done requests.
 #' `r spec("#Requests_ConfigurationDone")`
 handle.request.configurationDone <- function(x, ..., adapter, client) {
-  write_message(client)
+  write_message(client, response(x))
 }
 
 #' @export
@@ -127,6 +133,14 @@ handle.request.stackTrace <- function(x, ..., adapter, client) {
 
 #' @export
 #' @describeIn protocol-handlers
+#' Reverse request sent to clients to start debugging
+#' `r spec("#Reverse_Requests_StartDebugging")`
+handle.request.startDebugging <- function(x, ..., adapter, client) {
+  adapter$relay_to_clients(x)
+}
+
+#' @export
+#' @describeIn protocol-handlers
 #' Handle configuration done requests.
 #' `r spec("#Requests_Threads")`
 handle.request.threads <- function(x, ..., adapter, client) {
@@ -146,14 +160,6 @@ handle.request.variables <- function(x, ..., adapter, client) {
 
   # relay to debuggee
   write_message(adapter$debuggee, x)
-}
-
-#' @describeIn protocol-handlers
-#' Issue reverse request and await response.
-#' `r spec("#Reverse_Requests_RunInTerminal")`
-handle.reverse_request <- function(x, ..., adapter, client) {
-  write_message(client, x)
-  handle(adapter)
 }
 
 #' @describeIn protocol-handlers
