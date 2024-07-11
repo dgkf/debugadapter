@@ -209,7 +209,8 @@ format_variable.array <- function(x) {
 }
 
 
-sink <- local({
+#' Collection of utilities for managing redirection of default debugger output
+dapsink <- local({
   index <- NA
 
   path <- function() {

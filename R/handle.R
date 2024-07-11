@@ -17,6 +17,8 @@ handle.request <- function(x, ...) {
   UseMethod("handle.request")
 }
 
+#' @export
+#' @name protocol-handlers
 handle.request.default <- function(x, ...) {
   INFO("don't know how to handle request command: ", x$command)
 }

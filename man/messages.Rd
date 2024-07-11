@@ -16,7 +16,7 @@ read_message(x, ...)
 
 \method{read_message}{client}(x, ...)
 
-\method{read_message}{default}(x, ..., name = NULL)
+\method{read_message}{default}(x, ..., name = NULL, timeout = NULL, poll = timeout/100)
 
 write_message(x, content = list(), ...)
 
@@ -33,9 +33,9 @@ format_message_content(content)
 
 \item{name}{An optional string to use for the connection for debug logs}
 
-\item{content}{The message contents to write}
-
 \item{timeout}{A maximum time in seconds to wait to receive a new message}
+
+\item{content}{The message contents to write}
 }
 \description{
 Protocol Message Reading and Parsing

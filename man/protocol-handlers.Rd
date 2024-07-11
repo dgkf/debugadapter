@@ -15,6 +15,7 @@
 \alias{handle}
 \alias{handle.NULL}
 \alias{handle.request}
+\alias{handle.request.default}
 \alias{handle.response}
 \alias{handle.event}
 \alias{handle.request.initialize}
@@ -58,6 +59,8 @@ handle(x, ...)
 \method{handle}{`NULL`}(x, ...)
 
 handle.request(x, ...)
+
+\method{handle}{request.default}(x, ...)
 
 handle.response(x, ...)
 

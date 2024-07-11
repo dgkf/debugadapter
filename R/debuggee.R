@@ -68,6 +68,35 @@ debuggee <- R6::R6Class(
       get_variables(self$frames[[varref]])
     },
 
+    set_stack_frames = function(calls, frames) {
+      self$calls <- calls
+      self$frames <- frames
+    },
+
+    reset_stack_frames = function() {
+      self$calls <- list()
+      self$frames <- list()
+    },
+
+    event_stopped_breakpoint = function(ids) {
+      write_message(self, event("stopped", list(
+        reason = "breakpoint",
+        description = "Hit breakpoint",
+        threadId = 0,
+        allThreadsStopped = TRUE,
+        hitBreakpointIds = ids
+      )))
+    },
+
+    event_stopped_step = function() {
+      write_message(self, event("stopped", list(
+        reason = "step",
+        description = "Paused on expression",
+        threadId = 0,
+        allThreadsStopped = TRUE
+      )))      
+    },
+
     handle = function(x, ...) r_handle(x, ..., debuggee = self)
   )
 )
