@@ -3,9 +3,10 @@
 > are only for confirming that your configuration is correct.
 
 1. [Setup Guide](#setup-guide)
-2. [Editor Configurations](#editor-configurations)
-   1. [neovim](#neovim)
-   2. [helix](#helix)
+1. [Editor Configurations](#editor-configurations)
+   1. [`neovim` with `nvim-dap`](#neovim-with-nvim-dap)
+   1. [`(neo)vim` with `vimspector`](#neovim-with-vimspector)
+   1. [`helix`](#helix)
 
 # Setup Guide
 
@@ -25,7 +26,7 @@ our editor of choice and our R repl can be clients of this server.
 
 ## Configure Editor & Start Debugging
 
-1. [neovim](#neovim)
+1. `neovim` with [`nvim-dap`](#neovim-with-nvim-dap) or [`vimspector`](#neovim-with-vimspector)
 2. [helix](#helix)
 
 ## Confirm
@@ -45,7 +46,7 @@ session should emit a flurry of debug statements starting with:
 
 # Editor Configurations
 
-## `neovim`
+## `neovim` with `nvim-dap`
 
 ### Pre-requisites
 
@@ -93,6 +94,53 @@ dap.configurations.r = {
 In a new `neovim` session, hop into any `.R` file. You run `:DapContinue` to
 attempt a connection with your R repl. Next, head to the section on
 [confirming your setup](#confirm).
+
+## (`neo`)`vim` with `vimspector`
+
+### Pre-requisites
+
+* Install the [`vimspector`](https://github.com/puremourning/vimspector) 
+  (neo)vim plugin
+* `vimspector` itself depends on `python3`, which we'll use to run the debug
+  client within (neo)vim.
+
+### Configure
+
+In your (`neo`)`vim` configuration, register the R debugger with `vimspector`
+
+```lua
+vim.cmd [[
+let g:vimspector_adapters = 
+  \ {
+  \   "r-debugadapter": {
+  \     "name": "R Debugger",
+  \     "port": "${port:18721}",
+  \     "remote": {
+  \       "attachCommand": [
+  \         "sh", "-c", "python", "-m", "debugpy", "--listen", "0.0.0.0:${port:18721}"
+  \       ]
+  \     }
+  \   }
+  \ }
+
+let g:vimspector_configurations = 
+  \ {
+  \   "Attach R {debugadapter}": {
+  \     "adapter": "r-debugadapter",
+  \     "filetypes": [ "r" ],
+  \     "configuration": {
+  \       "request": "attach"
+  \     }
+  \   }
+  \ }
+]]
+```
+
+### Start Debugging
+
+In a new (`neo`)`vim` session, hop into any `.R` file. Use 
+`:eval vimspector#Launch()` to attempt a connection with your R repl. Next, head
+to the section on [confirming your setup](#confirm).
 
 ## `helix`
 
