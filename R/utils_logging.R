@@ -39,9 +39,9 @@ log <- function(level, ..., verbose = getOption("debugadapter.log", FALSE)) {
 
   log_prefix <- getOption("debugadapter.log_prefix", "")
   level_msg <- switch(as.numeric(level),
-    "1" = cli::col_magenta("[TRACE] "),
+    "3" = cli::col_magenta("[TRACE] "),
     "2" = cli::col_yellow("[DEBUG] "),
-    "3" = cli::col_blue("[INFO] "),
+    "1" = cli::col_blue("[INFO] "),
     ""
   )
 

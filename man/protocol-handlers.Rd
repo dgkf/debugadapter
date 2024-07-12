@@ -21,6 +21,7 @@
 \alias{handle.request.initialize}
 \alias{handle.request.attach}
 \alias{handle.request.configurationDone}
+\alias{handle.request.continue}
 \alias{handle.request.disconnect}
 \alias{handle.request.scopes}
 \alias{handle.request.setBreakpoints}
@@ -72,6 +73,8 @@ handle.response(x, ...)
 
 \method{handle}{request.configurationDone}(x, ..., adapter, client)
 
+\method{handle}{request.continue}(x, ..., adapter, client)
+
 \method{handle}{request.disconnect}(x, ..., adapter, client)
 
 \method{handle}{request.scopes}(x, ..., adapter, client)
@@ -113,6 +116,9 @@ Dispatch for protocol messaging
 
 \item \code{handle(request.configurationDone)}: Handle configuration done requests.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_ConfigurationDone})
+
+\item \code{handle(request.continue)}: Handle configuration done requests.
+(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Continue})
 
 \item \code{handle(request.disconnect)}: Handle disconnect request to disconnect from the debuggee, end the debug
 session and shut itself down.
