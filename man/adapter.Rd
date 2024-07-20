@@ -56,6 +56,7 @@ breakpoint}
 \item \href{#method-adapter-next_breakpoint_id}{\code{adapter$next_breakpoint_id()}}
 \item \href{#method-adapter-set_pending_breakpoints}{\code{adapter$set_pending_breakpoints()}}
 \item \href{#method-adapter-set_breakpoints}{\code{adapter$set_breakpoints()}}
+\item \href{#method-adapter-close_connections}{\code{adapter$close_connections()}}
 \item \href{#method-adapter-clone}{\code{adapter$clone()}}
 }
 }
@@ -246,6 +247,15 @@ to clients.}
 \subsection{Returns}{
 used for side-effects of updating state and relaying message
 }
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-adapter-close_connections"></a>}}
+\if{latex}{\out{\hypertarget{method-adapter-close_connections}{}}}
+\subsection{Method \code{close_connections()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{adapter$close_connections()}\if{html}{\out{</div>}}
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-adapter-clone"></a>}}

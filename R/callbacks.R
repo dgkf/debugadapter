@@ -27,7 +27,7 @@ insert_terminated_callback <- function(prompt) {
 #'   it may have encountered. Not strictly necessary, but very helpful.
 #'
 insert_sync_callback <- function(debuggee, process) {
-  addTaskCallback(name = "Synchronize Debugger", function(...) {
+  invisible(addTaskCallback(name = "Synchronize Debugger", function(...) {
     if (!is.null(process)) {
       DEBUG(sprintf(
         "adapter running in subprocess on pid:%.f (%s)",
@@ -56,5 +56,5 @@ insert_sync_callback <- function(debuggee, process) {
 
     # keep callback as long as adapter is alive
     if (is.null(process)) TRUE else process$is_alive()
-  })
+  }))
 }

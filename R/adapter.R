@@ -76,7 +76,7 @@ adapter <- R6::R6Class(  # nolint
       self$timeout <- timeout
       self$port <- port
       self$server <- serverSocket(port = port)
-      reg.finalizer(self, function(...) close(self$server))
+      reg.finalizer(self, self$close_connections)
 
       self
     },
@@ -84,6 +84,7 @@ adapter <- R6::R6Class(  # nolint
     #' The core loop of the adapter, handling connections and message passing
     #' @return will not return unless an error is encountered
     run = function() {
+      on.exit(self$close_connections())
       repeat {
         self$open_new_connections()
         self$process_requests()
@@ -131,7 +132,10 @@ adapter <- R6::R6Class(  # nolint
           DEBUG("new connection (", n, ") accepted on port ", self$port)
           self$clients[[n]] <- client$new(conn)
         }, error = function(e) {
-          message(conditionMessage(e))
+          DEBUG(
+            "Error while attempting to accept connection on port ",
+            self$port, ":\n", conditionMessage(e)
+          )
         })
       }
     },
@@ -215,6 +219,13 @@ adapter <- R6::R6Class(  # nolint
 
       # relay response back out to clients
       self$relay_to_clients(content)
+    },
+
+    close_connections = function() {
+      for (client in self$clients) {
+        if (isOpen(client$connection)) close(client$connection)
+      }
+      if (isOpen(self$server)) close(self$server)
     }
   ),
   active = list(

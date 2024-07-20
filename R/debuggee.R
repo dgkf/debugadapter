@@ -21,7 +21,7 @@ debuggee <- R6::R6Class(
     #' @field stack_frames the most recent stopping event's stack frames
     stack_frames = list(),
 
-    initialize = function(..., timeout = 0.5) {
+    initialize = function(..., timeout = 5.0) {
       # the 'client' we're connected to is the adapter
       self$arguments <- list(clientName = "adapter")
       super$initialize(new_connection(..., timeout = timeout))
