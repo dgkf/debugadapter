@@ -23,7 +23,16 @@ debug_prompt <- R6::R6Class(  # nolint
 
     initialize = function(debuggee, ...) {
       self$debuggee <- debuggee
+      self$reset()
       self
+    },
+
+    reset = function() {
+      self$breakpoint_lines <- integer()
+      self$locations <- list()
+      self$last_addr <- NULL
+      self$last_loc <- integer(8)
+      self$stepping <- FALSE
     },
 
     browser_hook = function(hook, condition, envir) {
@@ -31,68 +40,69 @@ debug_prompt <- R6::R6Class(  # nolint
       self$bind_local_breakpoints()
 
       withRestarts(
-        withCallingHandlers(
-          tryCatch(
-            {
-              hit <- self$is_at_breakpoint_line()
-              if (!self$stepping && !hit) skip_browser_step()
+        withCallingHandlers(tryCatch(
+          {
+            hit <- self$is_at_breakpoint_line()
+            if (!self$stepping && !hit) skip_browser_step()
 
-              # NOTE: this frame count might not be correct as we step into
-              # functions - needs testing
-              self$debuggee$set_stack_frames(sys.calls(), sys.frames())
+            # NOTE: this frame count might not be correct as we step into
+            # functions - needs testing
+            self$debuggee$set_stack_frames(sys.calls(), sys.frames())
 
-              if (hit) {
-                ids <- self$get_line_breakpoint_ids()
-                self$debuggee$event_stopped_breakpoint(ids)
-              } else {
-                self$debuggee$event_stopped_step()
+            if (hit) {
+              ids <- self$get_line_breakpoint_ids()
+              self$debuggee$event_stopped_breakpoint(ids)
+            } else {
+              self$debuggee$event_stopped_step()
+            }
+
+            # TODO: handle this more gracefully instead of just spamming
+            # connection listening to handle follow-up requests
+            #  - IDEA: use custom messages to pre-send responses in
+            #          anticipation of frame and variable requests so that
+            #          we don't need to hang here and wait for them.
+            repeat {
+              msg <- read_message(self$debuggee, timeout = 0.05)
+              if (is.null(msg)) break
+              self$debuggee$handle(msg)
+            }
+
+            self$print_breadcrumbs(sys.call())
+            repeat {
+              resp <- parse(prompt = cli::col_yellow("‼ "), n = 1)
+              if (is.expression(resp)) resp <- resp[[1]]
+              if (is.symbol(resp)) {
+                switch(as.character(resp),
+                  "where" = {
+                    sc <- sys.calls()
+                    cat(paste0(
+                      seq_along(sc), ". ",
+                      vcapply(lapply(sc, `[[`, 1), deparse, nlines = 1),
+                      collapse = "\n"
+                    ))
+                    next
+                  },
+                  "n" = { self$stepping <- TRUE; break },  # nolint
+                  "c" = { self$stepping <- FALSE; break }  # nolint
+                )
               }
-
-              # TODO: handle this more gracefully instead of just spamming
-              # connection listening to handle follow-up requests
-              #  - IDEA: use custom messages to pre-send responses in anticipation 
-              #          of frame and variable requests so that we don't need
-              #          to hang here and wait for them.
-              while (!is.null(msg <- read_message(self$debuggee, timeout = 0.05))) {
-                self$debuggee$handle(msg)
-              }
-
-              self$print_breadcrumbs(sys.call())
-              repeat {
-                resp <- parse(prompt = cli::col_yellow("‼ "), n = 1)
-                if (is.expression(resp)) resp <- resp[[1]]
-                if (is.symbol(resp)) {
-                  switch(as.character(resp),
-                    "where" = { 
-                      sc <- sys.calls()
-                      cat(paste0(
-                        seq_along(sc), ". ", 
-                        vcapply(lapply(sc, `[[`, 1), deparse, nlines = 1),
-                        collapse = "\n"
-                      ))
-                      next 
-                    },
-                    "n" = { self$stepping <- TRUE; break },  # nolint
-                    "c" = { self$stepping <- FALSE; break }  # nolint
-                  )
-                }
-                print(eval(resp, envir = envir))
-              }
-            },
-            skip_browser_step = function(cond) {
-              TRACE("step")
-              invokeRestart("browser")
-            },
-            error = function(e) {
-              cat(
-                "Error in ", 
-                deparse(conditionCall(e), nlines = 1, width.cutoff = 40), "\n", 
-                conditionMessage(e), "\n"
-              )
-            },
-            finally = function(...) TRACE("debug prompt exiting")
-          )
-        ),
+              print(eval(resp, envir = envir))
+            }
+          },
+          skip_browser_step = function(cond) {
+            TRACE("step")
+            invokeRestart("browser")
+          },
+          error = function(e) {
+            cat(
+              "Error in ",
+              deparse(conditionCall(e), nlines = 1, width.cutoff = 40), "\n",
+              conditionMessage(e), "\n"
+            )
+            invokeRestart("browser")
+          },
+          finally = function(...) TRACE("debug prompt exiting")
+        )),
         browser = function(...) TRACE("debug prompt restart")
       )
     },
@@ -144,16 +154,4 @@ skip_browser_step <- function() {
   cond <- simpleCondition("skipping browser step")
   class(cond) <- c("skip_browser_step", class(cond))
   signalCondition(cond)
-}
-
-#' helper to manage exit message
-insert_terminated_callback <- function(prompt) {
-  name <- paste0(packageName(), "_browser_top_level_callback")
-  if (!name %in% getTaskCallbackNames()) {
-    addTaskCallback(name = name, function(...) {
-      prompt$debuggee$reset_stack_frames()
-      write_message(prompt$debuggee, event("terminated"))
-      FALSE
-    })
-  }
 }

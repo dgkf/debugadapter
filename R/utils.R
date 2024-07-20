@@ -84,7 +84,7 @@ simple_path <- function(path) {
 #' @param envir An environment in which to evaluate the expression
 #'
 find_source_object <- function(expr, envir) {
-  UseMethod("find_source_object")  
+  UseMethod("find_source_object")
 }
 
 #' @export
@@ -187,7 +187,7 @@ srcpos <- function() {
 #' @param x Any R object
 #'
 format_variable <- function(x) {
-  UseMethod("format_variable")  
+  UseMethod("format_variable")
 }
 
 #' @export
@@ -203,7 +203,7 @@ format_variable.data.frame <- function(x) {
 
 #' @export
 format_variable.array <- function(x) {
-  d <- dim(x)  
+  d <- dim(x)
   type <- if (length(d) <= 2) "matrix" else "array"
   paste0("<", type, " ", paste0(d, collapse = "x"), ">")
 }
@@ -221,7 +221,7 @@ dapsink <- local({
 
   conn <- function() {
     conns <- showConnections(all = TRUE)[, "description"]
-    id <- names(cons)[grepl(browser_sink_path(), conns, fixed = TRUE)]
+    id <- names(conns)[grepl(path(), conns, fixed = TRUE)]
     if (length(id) > 0) {
       getConnection(id)
     } else {
@@ -231,6 +231,11 @@ dapsink <- local({
     }
   }
 
+  close <- function() {
+    cn <- conn()
+    if (isOpen(cn)) base::close(cn)
+  }
+
   #' @param set expects either "open" (to redirect stdout) or "close"
   redirect <- function(type = "output") {
     if (!is.na(index)) return()
@@ -238,13 +243,10 @@ dapsink <- local({
     index <<- sink.number()
   }
 
-  close <- function() {
-    cn <- conn()
-    if (isOpen(cn)) close(cn)
-  }
-
   release <- function(type = "output") {
-    sink(file = conn(), type = type)
+    while (sink.number() >= index) { sink() }
+    close()
+    index <<- NA
   }
 
   environment()

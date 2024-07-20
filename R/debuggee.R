@@ -21,10 +21,16 @@ debuggee <- R6::R6Class(
     #' @field stack_frames the most recent stopping event's stack frames
     stack_frames = list(),
 
-    initialize = function(...) {
+    initialize = function(..., timeout = 5.0) {
       # the 'client' we're connected to is the adapter
       self$arguments <- list(clientName = "adapter")
-      super$initialize(...)
+      super$initialize(new_connection(..., timeout = timeout))
+
+      # make a connection to the adapter, registering this session as debuggee
+      write_message(self, request("initialize", list(clientName = "r-session")))
+      write_message(self, request("attach", list(clientName = "r-session")))
+
+      self
     },
 
     set_breakpoints = function(breakpoints) {
@@ -65,7 +71,11 @@ debuggee <- R6::R6Class(
 
     get_variables = function(varref) {
       # for now, varref is always the frame id
-      get_variables(self$frames[[varref]])
+      if (varref <= length(self$frames)) {
+        get_variables(self$frames[[varref]])
+      } else {
+        list()
+      }
     },
 
     set_stack_frames = function(calls, frames) {
@@ -94,7 +104,7 @@ debuggee <- R6::R6Class(
         description = "Paused on expression",
         threadId = 0,
         allThreadsStopped = TRUE
-      )))      
+      )))
     },
 
     handle = function(x, ...) r_handle(x, ..., debuggee = self)
@@ -107,12 +117,16 @@ stack_frames <- function(calls, frames) {
       src <- getSrcref(call)
 
       if (is.null(src)) {
+        obj <- tryCatch(
+          eval(call[[1]], envir = frame),
+          error = function(e) NULL
+        )
+
         # find source object (which may be different that a traced object)
-        obj <- tryCatch(eval(call[[1]], envir = frame), error = function(e) NULL)
         src <- getSrcref(find_source_object(obj))
       }
 
-      # derive some source information 
+      # derive some source information
       filepath <- getSrcFilename(src, full.names = TRUE)
       span <- as.numeric(src)
 
@@ -159,7 +173,7 @@ get_variables <- function(frame) {
     list(
       name = varname,
       value = format_variable(var)
-      # TODO(protocol): tons of optional enhancements 
+      # TODO(protocol): tons of optional enhancements
     )
   })
 }

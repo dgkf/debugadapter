@@ -66,6 +66,14 @@ handle.request.configurationDone <- function(x, ..., adapter, client) {
 
 #' @export
 #' @describeIn protocol-handlers
+#' Handle configuration done requests.
+#' `r spec("#Requests_Continue")`
+handle.request.continue <- function(x, ..., adapter, client) {
+  write_message(client, response(x))
+}
+
+#' @export
+#' @describeIn protocol-handlers
 #' Handle disconnect request to disconnect from the debuggee, end the debug
 #' session and shut itself down.
 #' `r spec("#Requests_Disconnect")`

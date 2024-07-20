@@ -113,12 +113,13 @@ vim.cmd [[
 let g:vimspector_adapters = 
   \ {
   \   "r-debugadapter": {
-  \     "name": "R Debugger",
+  \     "name": "r-debugadapter",
   \     "port": "${port:18721}",
-  \     "remote": {
-  \       "attachCommand": [
-  \         "sh", "-c", "python", "-m", "debugpy", "--listen", "0.0.0.0:${port:18721}"
-  \       ]
+  \     "remote": {},
+  \     "launch": {
+  \       "remote": {
+  \         "runCommand": [ "R", "-e", "debugadapter::run(port = ${port:18721})" ]
+  \       }
   \     }
   \   }
   \ }
@@ -128,9 +129,13 @@ let g:vimspector_configurations =
   \   "Attach R {debugadapter}": {
   \     "adapter": "r-debugadapter",
   \     "filetypes": [ "r" ],
-  \     "configuration": {
-  \       "request": "attach"
-  \     }
+  \     "configuration": { "request": "attach" }
+  \   },
+  \   "Launch R {debugadapter}": {
+  \     "adapter": "r-debugadapter",
+  \     "filetypes": [ "r" ],
+  \     "remote-request": "launch",
+  \     "configuration": { "request": "launch" }
   \   }
   \ }
 ]]
