@@ -21,16 +21,29 @@ debuggee <- R6::R6Class(
     #' @field stack_frames the most recent stopping event's stack frames
     stack_frames = list(),
 
+    #' @field adapter_has_client A logical value indicating whether the
+    #'   connected adapter also is connected to all known clients.
+    adapter_has_client = FALSE,
+
     initialize = function(..., timeout = 5.0) {
       # the 'client' we're connected to is the adapter
       self$arguments <- list(clientName = "adapter")
       super$initialize(new_connection(..., timeout = timeout))
 
       # make a connection to the adapter, registering this session as debuggee
-      write_message(self, request("initialize", list(clientName = "r-session")))
-      write_message(self, request("attach", list(clientName = "r-session")))
+      args <- list(clientName = "r-session")
+      write_message(self, request("initialize", args))
+      write_message(self, request("attach", args))
+      write_message(self, request("configurationDone", args))
 
       self
+    },
+
+    await_client = function(poll = 0.05) {
+      while (!self$adapter_has_client) {
+        self$handle(read_message(self))
+        Sys.sleep(poll)
+      }
     },
 
     set_breakpoints = function(breakpoints) {
@@ -210,6 +223,18 @@ r_handle.response.default <- function(x, ..., debuggee) {
 
 #' @export
 #' @name protocol-handlers
+r_handle.event <- function(x, ..., debuggee) {
+  UseMethod("r_handle.event")
+}
+
+#' @export
+#' @name protocol-handlers
+r_handle.event.default <- function(x, ..., debuggee) {
+  NULL
+}
+
+#' @export
+#' @name protocol-handlers
 r_handle.request.default <- function(x, ..., debuggee) {
   DEBUG("debuggee received unknown request: ", x$command)
 }
@@ -246,6 +271,12 @@ r_handle.request.stackTrace <- function(x, ..., debuggee) {
 r_handle.request.variables <- function(x, ..., debuggee) {
   varref <- x$arguments$variablesReference
   write_message(debuggee, response(x, list(
-    variables = debuggee$get_variables(varref))
-  ))
+    variables = debuggee$get_variables(varref)
+  )))
+}
+
+#' @export
+#' @name protocol-handlers
+r_handle.event.configurationDone <- function(x, ..., debuggee) {
+  debuggee$adapter_has_client <- x$body$has_client
 }

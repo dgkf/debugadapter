@@ -50,9 +50,11 @@ handle.request.initialize <- function(x, ..., adapter, client) {
 #' Attach a client's connection as the active session
 #' `r spec("#Requests_Attach")`
 handle.request.attach <- function(x, ..., adapter, client) {
-  # NOTE: not to spec; special handling for attaching active R session debuggee
-  if (identical(x$arguments$clientName, "r-session"))
+  # NOTE(not-to-spec):
+  # special handling for attaching active R session debuggee
+  if (identical(x$arguments$clientName, "r-session")) {
     adapter$set_debuggee(client)
+  }
   write_message(client, response(x))
 }
 
@@ -61,6 +63,15 @@ handle.request.attach <- function(x, ..., adapter, client) {
 #' Handle configuration done requests.
 #' `r spec("#Requests_ConfigurationDone")`
 handle.request.configurationDone <- function(x, ..., adapter, client) {
+  client$configurationDone <- TRUE
+
+  # NOTE(not-to-spec):
+  # send debuggee an out-of-spec response indicating that a client has
+  # finished connecting. configurationDone is typically a request/response,
+  # not an event.
+  e <- event("configurationDone", list(has_client = adapter$has_client()))
+  if (!is.null(adapter$debuggee)) write_message(adapter$debuggee, e)
+
   write_message(client, response(x))
 }
 
@@ -82,11 +93,19 @@ handle.request.disconnect <- function(x, ..., adapter, client) {
 
 #' @export
 #' @describeIn protocol-handlers
+#' Launch the debug adapter and start a debugging session
+#' `r spec("#Requests_Launch")`
+handle.request.launch <- function(x, ..., adapter, client) {
+  write_message(client, response(x))
+}
+
+#' @export
+#' @describeIn protocol-handlers
 #' Handle configuration done requests.
 #' `r spec("#Requests_Scopes")`
 handle.request.scopes <- function(x, ..., adapter, client) {
   # TODO(perf): this could be passed to the adapter and stored alongside the
-  # initial stackFrames request, to avoid repeatedly communicating with 
+  # initial stackFrames request, to avoid repeatedly communicating with
   # debuggee
 
   # relay to debuggee

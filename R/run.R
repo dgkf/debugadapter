@@ -19,22 +19,18 @@ NULL
 run <- function(
   host = getOption("debugadapter.host", "localhost"),
   port = getOption("debugadapter.port", 18721),
-  ...
+  ...,
+  wait_for_client = FALSE
 ) {
   if (interactive()) {
     DEBUG("Starting background tcp server, awaiting DAP client ...")
     px <- dap_launch_bg(host = host, port = port, ...)
-    dap_attach(host = host, port = port, ..., process = px)
+    repl <- dap_attach(host = host, port = port, ..., process = px)
+    if (wait_for_client) repl$await_client()
   } else {
     DEBUG("Starting tcp server, awaiting DAP client ...")
     dap_launch(port = port, ...)
   }
-}
-
-#' @name dap
-#' @export
-dap_launch <- function(...) {
-  adapter$new(...)$run()
 }
 
 #' @name dap
@@ -49,4 +45,34 @@ dap_attach <- function(
   repl_prompt <- debug_prompt$new(repl_client)
   options(browser.hook = repl_prompt$browser_hook)
   insert_sync_callback(repl_client, process)
+  repl_client
+}
+
+#' @name dap
+#' @export
+dap_launch <- function(...) {
+  adapter$new(...)$run()
+}
+
+#' @name dap
+dap_launch_bg <- function(..., host) {
+  callr::r_bg(
+    function(..., parent_options) {
+      options(
+        warn = 2L,
+        debugadapter.log_prefix =
+          paste0(cli::style_dim(cli::col_grey("(pid:", Sys.getpid(), ")"))),
+        debugadapter.log = log
+      )
+      options(parent_options)
+      debugadapter::dap_launch(...)
+    },
+    args = list(
+      ...,
+      parent_options = list(
+        debugadapter.log = getOption("debugadapter.log"),
+        cli.num_colors = cli::num_ansi_colors()
+      )
+    )
+  )
 }

@@ -7,11 +7,14 @@
 \alias{r_handle.request}
 \alias{r_handle.response}
 \alias{r_handle.response.default}
+\alias{r_handle.event}
+\alias{r_handle.event.default}
 \alias{r_handle.request.default}
 \alias{r_handle.request.scopes}
 \alias{r_handle.request.setBreakpoints}
 \alias{r_handle.request.stackTrace}
 \alias{r_handle.request.variables}
+\alias{r_handle.event.configurationDone}
 \alias{handle}
 \alias{handle.NULL}
 \alias{handle.request}
@@ -23,6 +26,7 @@
 \alias{handle.request.configurationDone}
 \alias{handle.request.continue}
 \alias{handle.request.disconnect}
+\alias{handle.request.launch}
 \alias{handle.request.scopes}
 \alias{handle.request.setBreakpoints}
 \alias{handle.request.setExceptionBreakpoints}
@@ -45,6 +49,10 @@ r_handle.response(x, ..., debuggee)
 
 \method{r_handle}{response.default}(x, ..., debuggee)
 
+r_handle.event(x, ..., debuggee)
+
+\method{r_handle}{event.default}(x, ..., debuggee)
+
 \method{r_handle}{request.default}(x, ..., debuggee)
 
 \method{r_handle}{request.scopes}(x, ..., debuggee)
@@ -54,6 +62,8 @@ r_handle.response(x, ..., debuggee)
 \method{r_handle}{request.stackTrace}(x, ..., debuggee)
 
 \method{r_handle}{request.variables}(x, ..., debuggee)
+
+\method{r_handle}{event.configurationDone}(x, ..., debuggee)
 
 handle(x, ...)
 
@@ -76,6 +86,8 @@ handle.response(x, ...)
 \method{handle}{request.continue}(x, ..., adapter, client)
 
 \method{handle}{request.disconnect}(x, ..., adapter, client)
+
+\method{handle}{request.launch}(x, ..., adapter, client)
 
 \method{handle}{request.scopes}(x, ..., adapter, client)
 
@@ -123,6 +135,9 @@ Dispatch for protocol messaging
 \item \code{handle(request.disconnect)}: Handle disconnect request to disconnect from the debuggee, end the debug
 session and shut itself down.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Disconnect})
+
+\item \code{handle(request.launch)}: Launch the debug adapter and start a debugging session
+(\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Launch})
 
 \item \code{handle(request.scopes)}: Handle configuration done requests.
 (\url{https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Scopes})

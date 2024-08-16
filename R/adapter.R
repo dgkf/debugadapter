@@ -1,26 +1,3 @@
-#' @name dap
-dap_launch_bg <- function(..., host) {
-  callr::r_bg(
-    function(..., parent_options) {
-      options(
-        warn = 2L,
-        debugadapter.log_prefix =
-          paste0(cli::style_dim(cli::col_grey("(pid:", Sys.getpid(), ")"))),
-        debugadapter.log = log
-      )
-      options(parent_options)
-      debugadapter::dap_launch(...)
-    },
-    args = list(
-      ...,
-      parent_options = list(
-        debugadapter.log = getOption("debugadapter.log"),
-        cli.num_colors = cli::num_ansi_colors()
-      )
-    )
-  )
-}
-
 #' Adapter
 #'
 #' The debug adapter server, which manages connections to an arbitrary number
@@ -67,7 +44,12 @@ adapter <- R6::R6Class(  # nolint
     #'   connections should be closed.
     #' @param ... Additional arguments unused
     #' @return self
-    initialize = function(port = 18721, poll = 0.1, timeout = 60, ...) {
+    initialize = function(
+      port = 18721,
+      poll = 0.1,
+      timeout = 60,
+      ...
+    ) {
       DEBUG(
         "Starting tcp server at localhost:", port,
         ", listening for DAP client ..."
@@ -112,10 +94,7 @@ adapter <- R6::R6Class(  # nolint
     #' @return Used for side effects of message passing
     #'
     relay_to_clients = function(content, debuggee = FALSE) {
-      clients <- self$clients
-      if (!debuggee && !is.null(names(clients))) {
-        clients <- clients[names(clients) != "debuggee"]
-      }
+      clients <- if (debuggee) self$clients else self$editor_clients
       for (client in clients) write_message(client, content)
     },
 
@@ -221,6 +200,22 @@ adapter <- R6::R6Class(  # nolint
       self$relay_to_clients(content)
     },
 
+    #' Test whether all clients are configured
+    #'
+    #' Clients are only considered fully configured after the `debuggee` and
+    #' all attached debugging clients, with a minimum of one client, have
+    #' reached the configurationDone response of the initialization handshake.
+    #'
+    #' @return A logical value, `TRUE` if the debuggee and all debugging
+    #'   clients, with a minimum of one, have reached the end of
+    #'   initialization.
+    #'
+    has_client = function() {
+      !is.null(self$debuggee) &&
+        length(self$editor_clients) > 0 &&
+        all(vapply(self$clients, `[[`, logical(1L), "configurationDone"))
+    },
+
     close_connections = function() {
       for (client in self$clients) {
         if (isOpen(client$connection)) close(client$connection)
@@ -230,6 +225,9 @@ adapter <- R6::R6Class(  # nolint
   ),
   active = list(
     #' @field debuggee Retrieve debuggee client
-    debuggee = function() self$clients[["debuggee"]]
+    debuggee = function() self$clients[["debuggee"]],
+
+    #' @field editor_clients Retrieve non-debuggee clients
+    editor_clients = function() self$clients[names(self$clients) != "debuggee"]
   )
 )

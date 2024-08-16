@@ -14,6 +14,11 @@ client <- R6::R6Class(
     #' read from
     time_last_message = NULL,
 
+    #' @field configurationDone A logical value indicating whether the
+    #' intialization handshake has been completed, sending a completionDone
+    #' response back to the client.
+    configurationDone = FALSE,
+
     initialize = function(connection) {
       self$connection <- connection
       self$time_last_message <- Sys.time()

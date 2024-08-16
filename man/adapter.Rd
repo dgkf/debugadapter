@@ -40,6 +40,8 @@ breakpoint}
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{
 \item{\code{debuggee}}{Retrieve debuggee client}
+
+\item{\code{editor_clients}}{Retrieve non-debuggee clients}
 }
 \if{html}{\out{</div>}}
 }
@@ -56,6 +58,7 @@ breakpoint}
 \item \href{#method-adapter-next_breakpoint_id}{\code{adapter$next_breakpoint_id()}}
 \item \href{#method-adapter-set_pending_breakpoints}{\code{adapter$set_pending_breakpoints()}}
 \item \href{#method-adapter-set_breakpoints}{\code{adapter$set_breakpoints()}}
+\item \href{#method-adapter-has_client}{\code{adapter$has_client()}}
 \item \href{#method-adapter-close_connections}{\code{adapter$close_connections()}}
 \item \href{#method-adapter-clone}{\code{adapter$clone()}}
 }
@@ -246,6 +249,26 @@ to clients.}
 }
 \subsection{Returns}{
 used for side-effects of updating state and relaying message
+
+Test whether all clients are configured
+
+Clients are only considered fully configured after the \code{debuggee} and
+all attached debugging clients, with a minimum of one client, have
+reached the configurationDone response of the initialization handshake.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-adapter-has_client"></a>}}
+\if{latex}{\out{\hypertarget{method-adapter-has_client}{}}}
+\subsection{Method \code{has_client()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{adapter$has_client()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+A logical value, \code{TRUE} if the debuggee and all debugging
+clients, with a minimum of one, have reached the end of
+initialization.
 }
 }
 \if{html}{\out{<hr>}}
