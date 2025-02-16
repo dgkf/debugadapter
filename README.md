@@ -209,4 +209,3 @@ the design choices of this package in two key ways:
 - Prioritzing a use case where an arbitrary terminal can be 
   attached to the debug client and integrate with an interactive 
   R session.
-
