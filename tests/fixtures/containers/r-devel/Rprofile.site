@@ -1,0 +1,18 @@
+library(utils)
+
+options(
+  repos = c(CRAN = "https://cloud.r-project.org"),
+  debugadapter.log = 2
+)
+
+if (interactive()) {
+  if (requireNamespace("debugadapter", quietly = TRUE)) {
+    message("Launching debugadapter with `debugadapter::run()`")
+    debugadapter::run()
+  } else {
+    warning(
+      "`debugadapter` not available, install with:\n\n",
+      "   install.packages(\".\", repos = NULL, type = \"source\")\n"
+    )
+  }
+}

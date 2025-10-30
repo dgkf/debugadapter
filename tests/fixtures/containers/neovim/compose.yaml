@@ -1,0 +1,28 @@
+version: 3.7
+
+x-podman:
+  in_pod: false
+
+services:
+  r:
+    build:
+      context: ../r-devel
+      dockerfile: ../r-devel/Containerfile
+    image: r-devel-browser-hooks
+    entrypoint: ["/bin/true"] # no-op
+
+  neovim:
+    build:
+      dockerfile: Containerfile
+      additional_contexts:
+        r-devel-browser-hooks: "service:r" # require r as build dependency
+    image: neovim-r-devel
+    working_dir: /home/ubuntu/debugadapter
+    user: "1000:1000"
+    userns_mode: "keep-id:uid=1000,gid=1000"
+    volumes:
+      - $PWD:/home/ubuntu/debugadapter:Z
+      - r-pkgs:/home/ubuntu/R/lib
+
+volumes:
+  r-pkgs:

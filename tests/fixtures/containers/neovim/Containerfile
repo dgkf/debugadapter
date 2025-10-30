@@ -1,0 +1,22 @@
+FROM r-devel-browser-hooks
+
+RUN apt-get update \
+    && apt-get install -y \
+      software-properties-common
+
+RUN add-apt-repository ppa:neovim-ppa/stable -y \
+    && apt-get update \
+    && apt-get install -y \
+      git \
+      neovim
+
+USER ubuntu
+
+# add our init file
+RUN mkdir -p /home/ubuntu/.config/nvim
+COPY init.lua /home/ubuntu/.config/nvim/init.lua
+
+# run a one-time startup and close to pre-initialize plugins
+RUN nvim +":q" 
+      
+ENTRYPOINT ["nvim"]

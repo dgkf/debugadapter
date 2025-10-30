@@ -1,0 +1,39 @@
+FROM ubuntu
+
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get update && \
+    apt-get install -y \
+      make \
+      gcc \
+      g++ \
+      vim \
+      gfortran \
+      subversion \
+      rsync \
+      libreadline-dev \
+      libncurses-dev \
+      tzdata \
+      zlib1g-dev \
+      libbz2-dev \
+      liblzma-dev \
+      libpcre2-dev \
+      libcurl4-openssl-dev && \
+    dpkg-reconfigure --frontend noninteractive tzdata
+
+ENV EDITOR=vi
+
+RUN cd /usr/lib/ \
+    && svn --non-interactive --trust-server-cert \
+      checkout https://svn.r-project.org/R/trunk R \
+    && cd R \ 
+    && ./tools/rsync-recommended \
+    && ./configure --with-x=no CPPFLAGS=-DUSE_BROWSER_HOOK \
+    && make \
+    && cd /usr/bin \
+    && ln -s /usr/lib/R/bin/R R
+
+RUN mkdir -p /usr/lib/R/etc
+RUN echo "R_LIBS_USER=/home/ubuntu/R/lib" >> /usr/lib/R/etc/Renviron
+COPY ./Rprofile.site /usr/lib/R/etc/Rprofile.site
+
+ENTRYPOINT ["R", "--no-save"]
