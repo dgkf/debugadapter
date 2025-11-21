@@ -63,7 +63,7 @@ require("lazy").setup({
              type = 'r',
              request = 'attach',
              name = 'Attach to R process',
-             host = "localhost",
+             host = '127.0.0.1',
              port = 18721
            }
          }
